@@ -45,6 +45,22 @@ const ProjectDeployments: React.FC = () => {
   
   const navigate = useNavigate();
 
+  const handleRollback = async (depId: string) => {
+    const bypassConfirm = new URLSearchParams(window.location.search).get('confirm') === 'true';
+    if (!bypassConfirm && !window.confirm('Are you sure you want to trigger a rollback to this version?')) {
+      return;
+    }
+    try {
+      const res = await axios.post(`http://localhost:5000/api/deployments/rollback/${depId}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      navigate(`/deployments/${res.data.deploymentId}`);
+    } catch (err: any) {
+      console.error('Error triggering rollback:', err);
+      alert(err.response?.data?.message || 'Failed to trigger rollback.');
+    }
+  };
+
   const fetchData = async () => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
@@ -232,7 +248,7 @@ const ProjectDeployments: React.FC = () => {
 
                     {dep.status === 'SUCCESS' && idx > 0 && (
                       <button
-                        onClick={() => alert(`Rollback trigger will be implemented in Phase 10.`)}
+                        onClick={() => handleRollback(dep.id)}
                         className="project-action-btn edit"
                         style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0.45rem 1rem', width: 'auto', fontSize: '0.8rem', color: 'var(--text-primary)', borderColor: 'var(--accent-solid)' }}
                       >
