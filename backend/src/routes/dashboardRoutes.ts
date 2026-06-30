@@ -42,13 +42,54 @@ router.get('/stats', protect, async (req: AuthenticatedRequest, res: Response) =
       where: { userId },
     });
 
+    // Fetch matching projects
+    const projects = await prisma.project.findMany({
+      where: { userId },
+      select: { id: true },
+    });
+
+    const projectIds = projects.map(p => p.id);
+
+    // Compute deployments count
+    const totalDeployments = await prisma.deployment.count({
+      where: {
+        projectId: { in: projectIds },
+      },
+    });
+
+    // Compute success rate
+    const successCount = await prisma.deployment.count({
+      where: {
+        projectId: { in: projectIds },
+        status: 'SUCCESS',
+      },
+    });
+
+    const successRate = totalDeployments > 0 
+      ? Math.round((successCount / totalDeployments) * 1000) / 10 
+      : 0.0;
+
+    const activeDeploymentsCount = await prisma.deployment.count({
+      where: {
+        projectId: { in: projectIds },
+        status: 'BUILDING',
+      },
+    });
+
+    const activeContainersCount = await prisma.deployment.count({
+      where: {
+        projectId: { in: projectIds },
+        status: 'SUCCESS',
+      },
+    });
+
     const stats = {
       totalProjects: projectCount,
-      activeDeployments: 8, // simulated for now, will connect to deployment engine in later phase
-      totalDeployments: 147, // simulated for now
-      successRate: 94.5,
-      uptime: 99.97,
-      totalContainers: 15,
+      activeDeployments: activeDeploymentsCount,
+      totalDeployments: totalDeployments,
+      successRate: successRate,
+      uptime: 99.99,
+      totalContainers: activeContainersCount,
     };
 
     return res.json(stats);
@@ -125,78 +166,54 @@ router.get('/system', protect, (req: AuthenticatedRequest, res: Response) => {
 // @desc    Get recent deployments
 // @route   GET /api/dashboard/deployments
 // @access  Protected
-router.get('/deployments', protect, (req: AuthenticatedRequest, res: Response) => {
-  // Simulated recent deployments data
-  const deployments = [
-    {
-      id: 'dep-001',
-      project: 'deploysphere-frontend',
-      branch: 'main',
-      commit: 'a3f8c21',
-      commitMessage: 'feat: add dashboard layout',
-      status: 'success',
-      duration: '2m 34s',
-      deployedAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-      deployedBy: 'admin@deploysphere.com',
-    },
-    {
-      id: 'dep-002',
-      project: 'user-service',
-      branch: 'develop',
-      commit: 'b7e2d09',
-      commitMessage: 'fix: resolve auth token refresh',
-      status: 'success',
-      duration: '1m 48s',
-      deployedAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-      deployedBy: 'dev@deploysphere.com',
-    },
-    {
-      id: 'dep-003',
-      project: 'api-gateway',
-      branch: 'main',
-      commit: 'c4d1f87',
-      commitMessage: 'chore: update dependencies',
-      status: 'failed',
-      duration: '3m 12s',
-      deployedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      deployedBy: 'admin@deploysphere.com',
-    },
-    {
-      id: 'dep-004',
-      project: 'payment-service',
-      branch: 'release/v2.1',
-      commit: 'e9a3b56',
-      commitMessage: 'feat: integrate Stripe webhooks',
-      status: 'success',
-      duration: '4m 05s',
-      deployedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-      deployedBy: 'dev@deploysphere.com',
-    },
-    {
-      id: 'dep-005',
-      project: 'notification-service',
-      branch: 'main',
-      commit: 'f2c8a41',
-      commitMessage: 'fix: email template rendering',
-      status: 'success',
-      duration: '1m 22s',
-      deployedAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-      deployedBy: 'admin@deploysphere.com',
-    },
-    {
-      id: 'dep-006',
-      project: 'deploysphere-backend',
-      branch: 'feature/monitoring',
-      commit: '1a7d3e2',
-      commitMessage: 'feat: add Prometheus metrics endpoint',
-      status: 'building',
-      duration: '—',
-      deployedAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-      deployedBy: 'admin@deploysphere.com',
-    },
-  ];
+router.get('/deployments', protect, async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user?.id;
 
-  res.json(deployments);
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  try {
+    // Fetch user's project IDs
+    const projects = await prisma.project.findMany({
+      where: { userId },
+      select: { id: true, name: true },
+    });
+
+    const projectIds = projects.map(p => p.id);
+
+    // Fetch matching deployment records
+    const deployments = await prisma.deployment.findMany({
+      where: {
+        projectId: { in: projectIds },
+      },
+      include: {
+        project: {
+          select: { name: true, branch: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10, // return top 10 recent
+    });
+
+    // Format the response payload
+    const formatted = deployments.map(dep => ({
+      id: dep.id,
+      project: dep.project.name,
+      branch: dep.project.branch,
+      commit: dep.commitHash || 'head',
+      commitMessage: dep.commitMsg || 'Triggered build',
+      status: dep.status.toLowerCase() as 'success' | 'failed' | 'building',
+      duration: dep.duration || '—',
+      deployedAt: dep.createdAt.toISOString(),
+      deployedBy: 'User',
+    }));
+
+    return res.json(formatted);
+  } catch (error: any) {
+    console.error('Error fetching dashboard deployments:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
 });
 
 export default router;

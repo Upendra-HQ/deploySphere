@@ -10,16 +10,25 @@ import {
   Trash2, 
   ExternalLink,
   Code,
-  AlertTriangle,
   Layout,
   RefreshCw,
-  FolderOpen
+  FolderOpen,
+  Terminal,
+  CheckCircle2,
+  XCircle,
+  Loader2
 } from 'lucide-react';
 
 interface EnvVariable {
   id?: string;
   key: string;
   value: string;
+}
+
+interface Deployment {
+  id: string;
+  status: 'BUILDING' | 'SUCCESS' | 'FAILED';
+  createdAt: string;
 }
 
 interface Project {
@@ -31,6 +40,7 @@ interface Project {
   buildCommand?: string;
   startCommand?: string;
   envVariables: EnvVariable[];
+  deployments: Deployment[];
 }
 
 const Projects: React.FC = () => {
@@ -38,6 +48,7 @@ const Projects: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deployingId, setDeployingId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -58,6 +69,9 @@ const Projects: React.FC = () => {
 
   useEffect(() => {
     fetchProjects();
+    // Poll project list to update compilation statuses dynamically
+    const interval = setInterval(fetchProjects, 10000);
+    return () => clearInterval(interval);
   }, [token]);
 
   const handleDelete = async (id: string, name: string) => {
@@ -77,6 +91,22 @@ const Projects: React.FC = () => {
     }
   };
 
+  const handleDeploy = async (projectId: string) => {
+    setDeployingId(projectId);
+    try {
+      const res = await axios.post(`http://localhost:5000/api/deployments/project/${projectId}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const { deploymentId } = res.data;
+      navigate(`/deployments/${deploymentId}`);
+    } catch (err: any) {
+      console.error('Error launching deployment:', err);
+      alert(err.response?.data?.message || 'Failed to start compilation engine.');
+    } finally {
+      setDeployingId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="loading-screen">
@@ -85,6 +115,45 @@ const Projects: React.FC = () => {
       </div>
     );
   }
+
+  const renderStatus = (project: Project) => {
+    const latest = project.deployments && project.deployments.length > 0 
+      ? project.deployments[0] 
+      : null;
+
+    if (!latest) {
+      return (
+        <span className="project-status-text">
+          <Layout size={14} />
+          Not Deployed
+        </span>
+      );
+    }
+
+    switch (latest.status) {
+      case 'SUCCESS':
+        return (
+          <Link to={`/deployments/${latest.id}`} className="project-status-text text-green" style={{ textDecoration: 'none' }}>
+            <CheckCircle2 size={14} />
+            <span>Success</span>
+          </Link>
+        );
+      case 'FAILED':
+        return (
+          <Link to={`/deployments/${latest.id}`} className="project-status-text text-error" style={{ textDecoration: 'none' }}>
+            <XCircle size={14} />
+            <span>Failed</span>
+          </Link>
+        );
+      case 'BUILDING':
+        return (
+          <Link to={`/deployments/${latest.id}`} className="project-status-text" style={{ textDecoration: 'none', color: '#f59e0b' }}>
+            <Loader2 size={14} className="spin text-pulse" />
+            <span>Building...</span>
+          </Link>
+        );
+    }
+  };
 
   return (
     <div className="projects-page">
@@ -193,12 +262,13 @@ const Projects: React.FC = () => {
                 </div>
 
                 <div className="project-card-footer">
-                  <span className="project-status-text">
-                    <Layout size={14} />
-                    Not Deployed
-                  </span>
-                  <button className="deploy-btn" onClick={() => alert('Deployment engine will be configured in Phase 5.')}>
-                    Deploy Now
+                  {renderStatus(project)}
+                  <button 
+                    className="deploy-btn" 
+                    onClick={() => handleDeploy(project.id)}
+                    disabled={deployingId === project.id}
+                  >
+                    {deployingId === project.id ? 'Starting...' : 'Deploy Now'}
                   </button>
                 </div>
               </div>

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { triggerDeployment } from '../services/deploymentService';
 
 const prisma = new PrismaClient();
 
@@ -51,12 +52,18 @@ export const handleGithubPush = async (req: Request, res: Response) => {
 
     console.log(`[WEBHOOK TRIGGER] Found Project "${project.name}" (ID: ${project.id})`);
     console.log(`[WEBHOOK TRIGGER] Commit: ${commitHash} - "${commitMsg}"`);
-    console.log(`[WEBHOOK TRIGGER] Triggering build environment simulator...\n`);
+    console.log(`[WEBHOOK TRIGGER] Launching Deployment Engine...\n`);
 
-    // In later phases (Phase 5), this hook will delegate tasks directly to the deployment engine.
-    // For Phase 4, we print to the console and return success.
+    const deploymentId = await triggerDeployment({
+      projectId: project.id,
+      commitHash,
+      commitMsg,
+      deployedBy: triggerAuthor,
+    });
+
     return res.json({
       message: `Webhook received. Triggered build for project "${project.name}" on branch "${branchName}".`,
+      deploymentId,
       details: {
         projectId: project.id,
         commit: commitHash,

@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
 import ProjectForm from './pages/ProjectForm';
 import GitHubConnect from './pages/GitHubConnect';
+import DeploymentDetails from './pages/DeploymentDetails';
 import './index.css';
 
 function App() {
@@ -59,6 +60,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <GitHubConnect />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/deployments/:id"
+            element={
+              <ProtectedRoute>
+                <DeploymentDetails />
               </ProtectedRoute>
             }
           />

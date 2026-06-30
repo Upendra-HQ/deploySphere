@@ -6,6 +6,7 @@ import dashboardRoutes from './routes/dashboardRoutes';
 import projectRoutes from './routes/projectRoutes';
 import githubRoutes from './routes/githubRoutes';
 import webhookRoutes from './routes/webhookRoutes';
+import deploymentRoutes from './routes/deploymentRoutes';
 
 dotenv.config();
 
@@ -35,6 +36,9 @@ app.use('/api/github', githubRoutes);
 
 // Webhook Routes
 app.use('/api/webhooks', webhookRoutes);
+
+// Deployment Routes
+app.use('/api/deployments', deploymentRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
