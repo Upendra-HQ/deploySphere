@@ -1,0 +1,35 @@
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import authRoutes from './routes/authRoutes';
+import dashboardRoutes from './routes/dashboardRoutes';
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Health Check
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', message: 'DeploySphere Backend is running' });
+});
+
+// Authentication Routes
+app.use('/api/auth', authRoutes);
+
+// Dashboard Routes
+app.use('/api/dashboard', dashboardRoutes);
+
+// Error handling middleware
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Unhandled server error:', err);
+  res.status(500).json({ message: 'Something went wrong on the server', error: err.message });
+});
+
+app.listen(PORT, () => {
+  console.log(`DeploySphere Backend Server listening on http://localhost:${PORT}`);
+});
