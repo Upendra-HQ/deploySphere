@@ -12,6 +12,8 @@ model User {
   email              String              @unique
   password           String
   isVerified         Boolean             @default(false)
+  githubToken        String?
+  githubUsername     String?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   projects           Project[]

@@ -9,6 +9,7 @@ import VerifyEmail from './pages/VerifyEmail';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
 import ProjectForm from './pages/ProjectForm';
+import GitHubConnect from './pages/GitHubConnect';
 import './index.css';
 
 function App() {
@@ -50,6 +51,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ProjectForm />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/github-connect"
+            element={
+              <ProtectedRoute>
+                <GitHubConnect />
               </ProtectedRoute>
             }
           />

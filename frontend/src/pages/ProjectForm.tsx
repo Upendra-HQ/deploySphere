@@ -5,19 +5,31 @@ import axios from 'axios';
 import { 
   ArrowLeft, 
   Save, 
-  Plus, 
   Trash2, 
   Info,
   FolderPlus,
   Settings,
   PlusCircle,
-  Eye,
-  EyeOff
+  Github,
+  CheckCircle,
+  ToggleLeft,
+  ToggleRight,
+  Loader
 } from 'lucide-react';
 
 interface EnvVarInput {
   key: string;
   value: string;
+}
+
+interface GithubRepo {
+  name: string;
+  fullName: string;
+  url: string;
+}
+
+interface GithubBranch {
+  name: string;
 }
 
 const ProjectForm: React.FC = () => {
@@ -35,8 +47,18 @@ const ProjectForm: React.FC = () => {
   const [startCommand, setStartCommand] = useState('');
   const [envVariables, setEnvVariables] = useState<EnvVarInput[]>([]);
 
-  // State controls
-  const [loading, setLoading] = useState(isEditMode);
+  // GitHub Integration States
+  const [isGithubConnected, setIsGithubConnected] = useState(false);
+  const [githubUsername, setGithubUsername] = useState('');
+  const [githubRepos, setGithubRepos] = useState<GithubRepo[]>([]);
+  const [githubBranches, setGithubBranches] = useState<GithubBranch[]>([]);
+  const [selectedRepo, setSelectedRepo] = useState('');
+  const [manualInputMode, setManualInputMode] = useState(false);
+
+  // Loaders
+  const [loading, setLoading] = useState(true);
+  const [reposLoading, setReposLoading] = useState(false);
+  const [branchesLoading, setBranchesLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -44,7 +66,8 @@ const ProjectForm: React.FC = () => {
   const applyFrameworkDefaults = (fw: string) => {
     switch (fw) {
       case 'React':
-      case 'Vite':
+      case 'Vue':
+      case 'Svelte':
         setBuildCommand('npm run build');
         setStartCommand('npm run preview');
         break;
@@ -53,14 +76,8 @@ const ProjectForm: React.FC = () => {
         setStartCommand('npm start');
         break;
       case 'Node.js':
-      case 'Express':
         setBuildCommand('');
         setStartCommand('npm start');
-        break;
-      case 'Vue':
-      case 'Svelte':
-        setBuildCommand('npm run build');
-        setStartCommand('npm run preview');
         break;
       case 'Static':
         setBuildCommand('');
@@ -71,14 +88,24 @@ const ProjectForm: React.FC = () => {
     }
   };
 
+  // 1. Initial configuration load
   useEffect(() => {
-    if (isEditMode) {
-      const fetchProjectDetails = async () => {
-        try {
-          const res = await axios.get(`http://localhost:5000/api/projects/${id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          const project = res.data;
+    const initializeForm = async () => {
+      try {
+        const headers = { Authorization: `Bearer ${token}` };
+
+        // Check if user has connected GitHub
+        const meRes = await axios.get('http://localhost:5000/api/auth/me', { headers });
+        const hasGithub = !!meRes.data.user?.githubToken;
+        setIsGithubConnected(hasGithub);
+        if (hasGithub) {
+          setGithubUsername(meRes.data.user.githubUsername || '');
+        }
+
+        // If editing, load project details
+        if (isEditMode) {
+          const projectRes = await axios.get(`http://localhost:5000/api/projects/${id}`, { headers });
+          const project = projectRes.data;
           setName(project.name);
           setRepositoryUrl(project.repositoryUrl);
           setBranch(project.branch);
@@ -86,18 +113,67 @@ const ProjectForm: React.FC = () => {
           setBuildCommand(project.buildCommand || '');
           setStartCommand(project.startCommand || '');
           setEnvVariables(project.envVariables.map((v: any) => ({ key: v.key, value: v.value })));
-        } catch (err: any) {
-          console.error('Error fetching project settings:', err);
-          setError('Failed to load project details.');
-        } finally {
-          setLoading(false);
+          
+          // Switch to manual input mode for edits (standard way)
+          setManualInputMode(true);
+        } else {
+          applyFrameworkDefaults('React');
+          // If GitHub is connected, set mode to selection
+          setManualInputMode(!hasGithub);
         }
-      };
-      fetchProjectDetails();
-    } else {
-      applyFrameworkDefaults('React');
-    }
+
+        // Load repository lists if connected and not in manual mode
+        if (hasGithub && !isEditMode) {
+          setReposLoading(true);
+          const reposRes = await axios.get('http://localhost:5000/api/github/repos', { headers });
+          setGithubRepos(reposRes.data);
+          setReposLoading(false);
+        }
+      } catch (err: any) {
+        console.error('Error initializing form:', err);
+        setError('Failed to load initial configurations.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeForm();
   }, [id, token]);
+
+  // 2. Fetch branches when repository changes
+  useEffect(() => {
+    const fetchRepoBranches = async () => {
+      if (!selectedRepo || manualInputMode) return;
+
+      const repo = githubRepos.find(r => r.fullName === selectedRepo);
+      if (!repo) return;
+
+      // Set defaults based on repo fullName
+      setRepositoryUrl(repo.url);
+      if (!isEditMode) {
+        // Set name to repo name if not edited
+        setName(repo.name);
+      }
+
+      setBranchesLoading(true);
+      try {
+        const headers = { Authorization: `Bearer ${token}` };
+        const [owner, repoName] = repo.fullName.split('/');
+        const res = await axios.get(`http://localhost:5000/api/github/repos/${owner}/${repoName}/branches`, { headers });
+        setGithubBranches(res.data);
+        if (res.data.length > 0) {
+          setBranch(res.data[0].name);
+        }
+      } catch (err) {
+        console.error('Error fetching branches:', err);
+        setError('Failed to fetch repository branches.');
+      } finally {
+        setBranchesLoading(false);
+      }
+    };
+
+    fetchRepoBranches();
+  }, [selectedRepo, manualInputMode, githubRepos, token]);
 
   const handleFrameworkChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selected = e.target.value;
@@ -105,7 +181,7 @@ const ProjectForm: React.FC = () => {
     applyFrameworkDefaults(selected);
   };
 
-  // Env Var List Actions
+  // Env variables management
   const addEnvVarField = () => {
     setEnvVariables([...envVariables, { key: '', value: '' }]);
   };
@@ -128,6 +204,11 @@ const ProjectForm: React.FC = () => {
 
     if (!name || !repositoryUrl) {
       setError('Project name and Git repository URL are required.');
+      return;
+    }
+
+    if (!repositoryUrl.startsWith('http://') && !repositoryUrl.startsWith('https://')) {
+      setError('Repository URL must start with http:// or https://');
       return;
     }
 
@@ -173,7 +254,7 @@ const ProjectForm: React.FC = () => {
     return (
       <div className="loading-screen">
         <div className="loading-spinner" />
-        <p>Loading details...</p>
+        <p>Loading project settings...</p>
       </div>
     );
   }
@@ -205,6 +286,37 @@ const ProjectForm: React.FC = () => {
         <div className="form-card">
           <h2>{isEditMode ? 'Project Configuration Settings' : 'Initialize New Project'}</h2>
           <p className="form-subtitle">Define git configurations, build paths, and environment settings.</p>
+
+          {/* GitHub quick connect block */}
+          {!isEditMode && (
+            <div className="form-github-status-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '1.5rem 0', padding: '1rem', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Github size={20} className={isGithubConnected ? 'text-blue' : 'text-muted'} />
+                <span style={{ fontSize: '0.85rem' }}>
+                  {isGithubConnected 
+                    ? `Connected to GitHub as @${githubUsername}` 
+                    : 'GitHub not connected'}
+                </span>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                {isGithubConnected ? (
+                  <button 
+                    type="button" 
+                    onClick={() => setManualInputMode(!manualInputMode)}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: 'transparent', border: 'none', color: 'var(--accent-hover)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '500' }}
+                  >
+                    {manualInputMode ? <ToggleRight size={24} /> : <ToggleLeft size={24} />}
+                    <span>Manual URL Input</span>
+                  </button>
+                ) : (
+                  <Link to="/github-connect" className="auth-link" style={{ fontSize: '0.8rem', fontWeight: '600' }}>
+                    Connect Account
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="auth-alert auth-alert-error" style={{ marginTop: '1rem' }}>
@@ -250,29 +362,92 @@ const ProjectForm: React.FC = () => {
             <section className="form-section">
               <h3>Repository Configurations</h3>
               <div className="form-grid">
-                <div className="auth-input-group" style={{ gridColumn: 'span 2' }}>
-                  <label htmlFor="proj-repo">GitHub Repository URL</label>
-                  <input
-                    id="proj-repo"
-                    type="url"
-                    placeholder="https://github.com/username/repository-name"
-                    value={repositoryUrl}
-                    onChange={(e) => setRepositoryUrl(e.target.value)}
-                    required
-                  />
-                </div>
+                {isGithubConnected && !manualInputMode && !isEditMode ? (
+                  // Dropdown selection mode
+                  <>
+                    <div className="auth-input-group" style={{ gridColumn: 'span 2' }}>
+                      <label htmlFor="github-repo-select">GitHub Repository</label>
+                      {reposLoading ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', height: '42px', padding: '0 1rem', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
+                          <Loader size={16} className="spin text-muted" />
+                          <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Fetching repository list...</span>
+                        </div>
+                      ) : (
+                        <select
+                          id="github-repo-select"
+                          value={selectedRepo}
+                          onChange={(e) => setSelectedRepo(e.target.value)}
+                          className="form-select"
+                          required
+                        >
+                          <option value="">-- Select GitHub Repository --</option>
+                          {githubRepos.map((repo) => (
+                            <option key={repo.fullName} value={repo.fullName}>
+                              {repo.fullName}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
 
-                <div className="auth-input-group">
-                  <label htmlFor="proj-branch">Deployment Branch</label>
-                  <input
-                    id="proj-branch"
-                    type="text"
-                    placeholder="main"
-                    value={branch}
-                    onChange={(e) => setBranch(e.target.value)}
-                    required
-                  />
-                </div>
+                    <div className="auth-input-group">
+                      <label htmlFor="github-branch-select">Target Branch</label>
+                      {branchesLoading ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', height: '42px', padding: '0 1rem', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
+                          <Loader size={16} className="spin text-muted" />
+                          <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Loading branches...</span>
+                        </div>
+                      ) : (
+                        <select
+                          id="github-branch-select"
+                          value={branch}
+                          onChange={(e) => setBranch(e.target.value)}
+                          className="form-select"
+                          required
+                          disabled={!selectedRepo}
+                        >
+                          {githubBranches.length === 0 ? (
+                            <option value="">-- No Branches --</option>
+                          ) : (
+                            githubBranches.map((b) => (
+                              <option key={b.name} value={b.name}>
+                                {b.name}
+                              </option>
+                            ))
+                          )}
+                        </select>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  // Manual input mode
+                  <>
+                    <div className="auth-input-group" style={{ gridColumn: 'span 2' }}>
+                      <label htmlFor="proj-repo">Git Repository URL</label>
+                      <input
+                        id="proj-repo"
+                        type="url"
+                        placeholder="https://github.com/username/repository-name"
+                        value={repositoryUrl}
+                        onChange={(e) => setRepositoryUrl(e.target.value)}
+                        required
+                        disabled={isEditMode} // lock repo url on edit
+                      />
+                    </div>
+
+                    <div className="auth-input-group">
+                      <label htmlFor="proj-branch">Deployment Branch</label>
+                      <input
+                        id="proj-branch"
+                        type="text"
+                        placeholder="main"
+                        value={branch}
+                        onChange={(e) => setBranch(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </section>
 

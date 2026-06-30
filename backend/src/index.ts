@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import projectRoutes from './routes/projectRoutes';
+import githubRoutes from './routes/githubRoutes';
+import webhookRoutes from './routes/webhookRoutes';
 
 dotenv.config();
 
@@ -27,6 +29,12 @@ app.use('/api/dashboard', dashboardRoutes);
 
 // Project Routes
 app.use('/api/projects', projectRoutes);
+
+// GitHub Routes
+app.use('/api/github', githubRoutes);
+
+// Webhook Routes
+app.use('/api/webhooks', webhookRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

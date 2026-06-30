@@ -96,6 +96,7 @@ const Projects: React.FC = () => {
         <div className="dashboard-nav-links">
           <Link to="/dashboard" className="nav-link">Dashboard</Link>
           <Link to="/projects" className="nav-link active">Projects</Link>
+          <Link to="/github-connect" className="nav-link">GitHub</Link>
         </div>
         <div className="dashboard-nav-right">
           <Link to="/projects/new" className="dashboard-create-btn">
