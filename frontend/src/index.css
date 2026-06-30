@@ -1342,6 +1342,63 @@ body {
 }
 
 /* ============================
+   Project Deployments Timeline
+   ============================ */
+.project-deployments-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+.timeline-container {
+  position: relative;
+  padding-left: 2.5rem;
+  list-style: none;
+}
+
+.timeline-line {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 11px;
+  width: 2px;
+  background: var(--border-color);
+  z-index: 1;
+}
+
+.timeline-node-wrapper {
+  position: relative;
+  margin-bottom: 2.5rem;
+  z-index: 2;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -2.5rem;
+  top: 6px;
+  background: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  z-index: 3;
+}
+
+.timeline-card {
+  padding: 1.25rem;
+  transition: var(--transition);
+}
+
+.timeline-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* ============================
    Responsive
    ============================ */
 @media (max-width: 768px) {

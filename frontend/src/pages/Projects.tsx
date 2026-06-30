@@ -16,7 +16,8 @@ import {
   Terminal,
   CheckCircle2,
   XCircle,
-  Loader2
+  Loader2,
+  History
 } from 'lucide-react';
 
 interface EnvVariable {
@@ -212,6 +213,14 @@ const Projects: React.FC = () => {
                     </div>
                   </div>
                   <div className="project-card-actions">
+                    <button 
+                      onClick={() => navigate(`/projects/${project.id}/deployments`)}
+                      className="project-action-btn edit" 
+                      title="Deployment History"
+                      style={{ marginRight: '0.25rem' }}
+                    >
+                      <History size={16} />
+                    </button>
                     <button 
                       onClick={() => navigate(`/projects/edit/${project.id}`)}
                       className="project-action-btn edit" 
