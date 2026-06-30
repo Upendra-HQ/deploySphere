@@ -14,7 +14,10 @@ import {
   CheckCircle,
   ToggleLeft,
   ToggleRight,
-  Loader
+  Loader,
+  Copy,
+  Cpu,
+  Terminal
 } from 'lucide-react';
 
 interface EnvVarInput {
@@ -46,6 +49,15 @@ const ProjectForm: React.FC = () => {
   const [buildCommand, setBuildCommand] = useState('');
   const [startCommand, setStartCommand] = useState('');
   const [envVariables, setEnvVariables] = useState<EnvVarInput[]>([]);
+
+  // Jenkins Config States
+  const [useJenkins, setUseJenkins] = useState(false);
+  const [jenkinsUrl, setJenkinsUrl] = useState('');
+  const [jenkinsUser, setJenkinsUser] = useState('');
+  const [jenkinsToken, setJenkinsToken] = useState('');
+  const [jenkinsJobName, setJenkinsJobName] = useState('');
+  const [jenkinsfile, setJenkinsfile] = useState('');
+  const [showJenkinsfilePanel, setShowJenkinsfilePanel] = useState(false);
 
   // GitHub Integration States
   const [isGithubConnected, setIsGithubConnected] = useState(false);
@@ -113,6 +125,18 @@ const ProjectForm: React.FC = () => {
           setBuildCommand(project.buildCommand || '');
           setStartCommand(project.startCommand || '');
           setEnvVariables(project.envVariables.map((v: any) => ({ key: v.key, value: v.value })));
+          setUseJenkins(project.useJenkins || false);
+          setJenkinsUrl(project.jenkinsUrl || '');
+          setJenkinsUser(project.jenkinsUser || '');
+          setJenkinsToken(project.jenkinsToken || '');
+          setJenkinsJobName(project.jenkinsJobName || '');
+          
+          if (project.useJenkins) {
+            try {
+              const jkRes = await axios.get(`http://localhost:5000/api/jenkins/jenkinsfile/${id}`, { headers });
+              setJenkinsfile(jkRes.data.jenkinsfile);
+            } catch {}
+          }
           
           // Switch to manual input mode for edits (standard way)
           setManualInputMode(true);
@@ -230,6 +254,11 @@ const ProjectForm: React.FC = () => {
         framework,
         buildCommand,
         startCommand,
+        useJenkins,
+        jenkinsUrl,
+        jenkinsUser,
+        jenkinsToken,
+        jenkinsJobName,
         envVariables: validEnvVars.map(v => ({ key: v.key.trim(), value: v.value.trim() }))
       };
 
@@ -527,6 +556,125 @@ const ProjectForm: React.FC = () => {
                       </button>
                     </div>
                   ))}
+                </div>
+              )}
+            </section>
+
+            {/* Jenkins CI/CD Settings Section */}
+            <section className="form-section">
+              <div className="section-title-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Cpu size={18} className="text-blue" />
+                  <h3>Jenkins CI/CD Pipeline</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setUseJenkins(!useJenkins)}
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', padding: 0 }}
+                >
+                  {useJenkins ? (
+                    <ToggleRight size={38} className="text-blue" />
+                  ) : (
+                    <ToggleLeft size={38} style={{ color: 'var(--text-muted)' }} />
+                  )}
+                </button>
+              </div>
+
+              {useJenkins && (
+                <div className="jenkins-form-block" style={{ marginTop: '1.25rem', display: 'grid', gap: '1.25rem', borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem' }}>
+                  <div className="form-grid">
+                    <div className="auth-input-group">
+                      <label htmlFor="jk-url">Jenkins Server URL</label>
+                      <input
+                        id="jk-url"
+                        type="url"
+                        placeholder="http://localhost:8080"
+                        value={jenkinsUrl}
+                        onChange={(e) => setJenkinsUrl(e.target.value)}
+                        required={useJenkins}
+                      />
+                    </div>
+                    <div className="auth-input-group">
+                      <label htmlFor="jk-job">Job / Pipeline Name</label>
+                      <input
+                        id="jk-job"
+                        type="text"
+                        placeholder="deploysphere-service-pipeline"
+                        value={jenkinsJobName}
+                        onChange={(e) => setJenkinsJobName(e.target.value)}
+                        required={useJenkins}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-grid">
+                    <div className="auth-input-group">
+                      <label htmlFor="jk-user">Jenkins Username</label>
+                      <input
+                        id="jk-user"
+                        type="text"
+                        placeholder="admin"
+                        value={jenkinsUser}
+                        onChange={(e) => setJenkinsUser(e.target.value)}
+                      />
+                    </div>
+                    <div className="auth-input-group">
+                      <label htmlFor="jk-token">API Token / Password</label>
+                      <input
+                        id="jk-token"
+                        type="password"
+                        placeholder="••••••••••••••••••••"
+                        value={jenkinsToken}
+                        onChange={(e) => setJenkinsToken(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {isEditMode && (
+                    <div style={{ marginTop: '0.75rem' }}>
+                      <button
+                        type="button"
+                        className="add-env-btn"
+                        style={{ border: '1px solid var(--border-color)', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.02)' }}
+                        onClick={async () => {
+                          try {
+                            const jkRes = await axios.get(`http://localhost:5000/api/jenkins/jenkinsfile/${id}`, {
+                              headers: { Authorization: `Bearer ${token}` }
+                            });
+                            setJenkinsfile(jkRes.data.jenkinsfile);
+                            setShowJenkinsfilePanel(true);
+                          } catch {
+                            alert('Failed to generate Jenkinsfile pipeline.');
+                          }
+                        }}
+                      >
+                        <Terminal size={14} />
+                        {showJenkinsfilePanel ? 'Regenerate Jenkinsfile Pipeline' : 'View Generated Jenkinsfile Pipeline'}
+                      </button>
+
+                      {showJenkinsfilePanel && jenkinsfile && (
+                        <div style={{ marginTop: '1rem', background: '#090d16', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 'var(--radius-sm)', padding: '1rem', position: 'relative' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                            <span>Declarative Jenkinsfile</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(jenkinsfile);
+                                alert('Jenkinsfile code successfully copied to clipboard!');
+                              }}
+                              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--accent-hover)', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem' }}
+                            >
+                              <Copy size={12} />
+                              Copy Code
+                            </button>
+                          </div>
+                          <pre style={{ margin: 0, fontFamily: 'monospace', fontSize: '0.8rem', lineHeight: '1.4', overflowX: 'auto', maxH: '250px', color: '#cbd5e1', whiteSpace: 'pre' }}>
+                            {jenkinsfile}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </section>

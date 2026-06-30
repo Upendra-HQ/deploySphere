@@ -4,6 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import util from 'util';
 
+import { triggerJenkinsBuild } from './jenkinsService';
+
 const execPromise = util.promisify(exec);
 const prisma = new PrismaClient();
 
@@ -66,6 +68,11 @@ const runBuildPipeline = async (deploymentId: string, projectId: string) => {
     }
 
     await appendLogs(`[INFO] Loaded project settings for "${project.name}" (Framework: ${project.framework}, Branch: ${project.branch})`);
+
+    if (project.useJenkins) {
+      await triggerJenkinsBuild(project, deploymentId);
+      return;
+    }
 
     // Setup working directories
     const tempDir = path.join(__dirname, '..', '..', 'temp', 'builds', deploymentId);

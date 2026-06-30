@@ -41,19 +41,24 @@ model VerificationToken {
 }
 
 model Project {
-  id            String        @id @default(uuid())
-  name          String
-  repositoryUrl String
-  branch        String        @default("main")
-  framework     String        @default("React")
-  buildCommand  String?
-  startCommand  String?
-  userId        String
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  envVariables  EnvVariable[]
-  deployments   Deployment[]
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String        @id @default(uuid())
+  name           String
+  repositoryUrl  String
+  branch         String        @default("main")
+  framework      String        @default("React")
+  buildCommand   String?
+  startCommand   String?
+  useJenkins     Boolean       @default(false)
+  jenkinsUrl     String?
+  jenkinsUser    String?
+  jenkinsToken   String?
+  jenkinsJobName String?
+  userId         String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  envVariables   EnvVariable[]
+  deployments    Deployment[]
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model EnvVariable {

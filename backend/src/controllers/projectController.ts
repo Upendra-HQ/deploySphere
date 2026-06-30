@@ -81,7 +81,7 @@ export const getProjectById = async (req: AuthenticatedRequest, res: Response) =
 // @access  Protected
 export const createProject = async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user?.id;
-  const { name, repositoryUrl, branch, framework, buildCommand, startCommand, envVariables } = req.body;
+  const { name, repositoryUrl, branch, framework, buildCommand, startCommand, useJenkins, jenkinsUrl, jenkinsUser, jenkinsToken, jenkinsJobName, envVariables } = req.body;
 
   if (!userId) {
     return res.status(401).json({ message: 'User unauthorized' });
@@ -105,6 +105,11 @@ export const createProject = async (req: AuthenticatedRequest, res: Response) =>
         framework: framework || 'React',
         buildCommand: buildCommand || '',
         startCommand: startCommand || '',
+        useJenkins: useJenkins || false,
+        jenkinsUrl: jenkinsUrl || '',
+        jenkinsUser: jenkinsUser || '',
+        jenkinsToken: jenkinsToken || '',
+        jenkinsJobName: jenkinsJobName || '',
         userId,
         envVariables: envVariables && envVariables.length > 0 
           ? {
@@ -133,7 +138,7 @@ export const createProject = async (req: AuthenticatedRequest, res: Response) =>
 export const updateProject = async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user?.id;
   const { id } = req.params;
-  const { name, repositoryUrl, branch, framework, buildCommand, startCommand, envVariables } = req.body;
+  const { name, repositoryUrl, branch, framework, buildCommand, startCommand, useJenkins, jenkinsUrl, jenkinsUser, jenkinsToken, jenkinsJobName, envVariables } = req.body;
 
   if (!userId) {
     return res.status(401).json({ message: 'User unauthorized' });
@@ -167,6 +172,11 @@ export const updateProject = async (req: AuthenticatedRequest, res: Response) =>
         framework: framework || project.framework,
         buildCommand: buildCommand !== undefined ? buildCommand : project.buildCommand,
         startCommand: startCommand !== undefined ? startCommand : project.startCommand,
+        useJenkins: useJenkins !== undefined ? useJenkins : project.useJenkins,
+        jenkinsUrl: jenkinsUrl !== undefined ? jenkinsUrl : project.jenkinsUrl,
+        jenkinsUser: jenkinsUser !== undefined ? jenkinsUser : project.jenkinsUser,
+        jenkinsToken: jenkinsToken !== undefined ? jenkinsToken : project.jenkinsToken,
+        jenkinsJobName: jenkinsJobName !== undefined ? jenkinsJobName : project.jenkinsJobName,
       },
     });
 
