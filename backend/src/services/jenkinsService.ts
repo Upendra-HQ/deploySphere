@@ -1,6 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 
+import { emitBuildLog } from './socketServer';
+
 const prisma = new PrismaClient();
 
 interface ProjectConfig {
@@ -169,6 +171,8 @@ export const triggerJenkinsBuild = async (
       where: { id: deploymentId },
       data: { logs: buildLogs },
     });
+    // Broadcast log delta chunk to WebSocket subscribers
+    emitBuildLog(deploymentId, text);
   };
 
   await appendLogs(`[JENKINS CI/CD] Server URI: ${project.jenkinsUrl}`);

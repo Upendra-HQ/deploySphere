@@ -5,6 +5,7 @@ import path from 'path';
 import util from 'util';
 
 import { triggerJenkinsBuild } from './jenkinsService';
+import { emitBuildLog } from './socketServer';
 
 const execPromise = util.promisify(exec);
 const prisma = new PrismaClient();
@@ -54,6 +55,8 @@ const runBuildPipeline = async (deploymentId: string, projectId: string) => {
       where: { id: deploymentId },
       data: { logs: buildLogs },
     });
+    // Broadcast log delta chunk to WebSocket subscribers
+    emitBuildLog(deploymentId, text);
   };
 
   try {

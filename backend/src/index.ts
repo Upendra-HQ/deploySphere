@@ -1,3 +1,4 @@
+import http from 'http';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -8,6 +9,7 @@ import githubRoutes from './routes/githubRoutes';
 import webhookRoutes from './routes/webhookRoutes';
 import deploymentRoutes from './routes/deploymentRoutes';
 import jenkinsRoutes from './routes/jenkinsRoutes';
+import { initSocketServer } from './services/socketServer';
 
 dotenv.config();
 
@@ -50,6 +52,11 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   res.status(500).json({ message: 'Something went wrong on the server', error: err.message });
 });
 
-app.listen(PORT, () => {
+const server = http.createServer(app);
+
+// Initialize real-time WebSocket logs server
+initSocketServer(server);
+
+server.listen(PORT, () => {
   console.log(`DeploySphere Backend Server listening on http://localhost:${PORT}`);
 });

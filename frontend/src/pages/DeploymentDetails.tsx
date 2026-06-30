@@ -41,6 +41,8 @@ const DeploymentDetails: React.FC = () => {
   
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
+  const [isWebSocketActive, setIsWebSocketActive] = useState(false);
+
   const fetchDeploymentDetails = async (isPoll = false) => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
@@ -59,15 +61,77 @@ const DeploymentDetails: React.FC = () => {
 
   useEffect(() => {
     fetchDeploymentDetails();
-    
-    // Poll logs every 2 seconds if the build is in BUILDING state
-    const interval = setInterval(() => {
-      if (deployment && deployment.status === 'BUILDING') {
-        fetchDeploymentDetails(true);
-      }
-    }, 2000);
+  }, [id, token]);
 
-    return () => clearInterval(interval);
+  useEffect(() => {
+    if (!id) return;
+
+    let socket: WebSocket | null = null;
+    let pollInterval: NodeJS.Timeout | null = null;
+
+    const startPolling = () => {
+      console.log('[CLIENT] Launching HTTP fallback logs polling.');
+      pollInterval = setInterval(() => {
+        if (deployment?.status === 'BUILDING' || !deployment) {
+          fetchDeploymentDetails(true);
+        }
+      }, 2000);
+    };
+
+    // Try to open WebSocket connection
+    try {
+      socket = new WebSocket('ws://localhost:5000');
+
+      socket.onopen = () => {
+        console.log('[CLIENT] WebSocket stream connected. Subscribing to build ID:', id);
+        socket?.send(JSON.stringify({ type: 'subscribe', deploymentId: id }));
+        setIsWebSocketActive(true);
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          
+          if (payload.event === 'log' && payload.data) {
+            setDeployment((prev) => {
+              if (!prev) return null;
+              // Append the logs chunk instantly
+              return {
+                ...prev,
+                logs: prev.logs + payload.data + '\n',
+              };
+            });
+          } else if (payload.event === 'status') {
+            fetchDeploymentDetails(true);
+          }
+        } catch (err) {
+          console.error('[CLIENT] Error parsing socket payload:', err);
+        }
+      };
+
+      socket.onclose = () => {
+        console.log('[CLIENT] WebSocket closed. Starting HTTP polling fallback.');
+        setIsWebSocketActive(false);
+        startPolling();
+      };
+
+      socket.onerror = () => {
+        console.log('[CLIENT] WebSocket error encountered. Activating polling.');
+        setIsWebSocketActive(false);
+      };
+    } catch (wsErr) {
+      console.error('[CLIENT] WebSocket setup failed:', wsErr);
+      startPolling();
+    }
+
+    return () => {
+      if (socket) {
+        socket.close();
+      }
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
+    };
   }, [id, token, deployment?.status]);
 
   // Auto scroll to bottom of terminal log window
