@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
+import projectRoutes from './routes/projectRoutes';
 
 dotenv.config();
 
@@ -23,6 +24,9 @@ app.use('/api/auth', authRoutes);
 
 // Dashboard Routes
 app.use('/api/dashboard', dashboardRoutes);
+
+// Project Routes
+app.use('/api/projects', projectRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

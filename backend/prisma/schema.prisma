@@ -1,38 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
 model User {
-  id                String              @id @default(uuid())
-  email             String              @unique
-  password          String
-  isVerified        Boolean             @default(false)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  sessions          Session[]
+  id                 String              @id @default(uuid())
+  email              String              @unique
+  password           String
+  isVerified         Boolean             @default(false)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  projects           Project[]
+  sessions           Session[]
   verificationTokens VerificationToken[]
 }
 
 model Session {
   id        String   @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   token     String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
   id        String   @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   token     String   @unique
-  type      String   // "EMAIL_VERIFICATION" or "PASSWORD_RESET"
+  type      String
   expiresAt DateTime
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id            String        @id @default(uuid())
+  name          String
+  repositoryUrl String
+  branch        String        @default("main")
+  framework     String        @default("React")
+  buildCommand  String?
+  startCommand  String?
+  userId        String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  envVariables  EnvVariable[]
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EnvVariable {
+  id        String   @id @default(uuid())
+  key       String
+  value     String
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, key])
 }

@@ -1,7 +1,9 @@
 import { Router, Request, Response } from 'express';
 import os from 'os';
 import { protect, AuthenticatedRequest } from '../middleware/authMiddleware';
+import { PrismaClient } from '@prisma/client';
 
+const prisma = new PrismaClient();
 const router = Router();
 
 // Helper: generate realistic time-series data for system metrics
@@ -28,18 +30,32 @@ const generateTimeSeriesData = (points: number, baseValue: number, variance: num
 // @desc    Get dashboard statistics
 // @route   GET /api/dashboard/stats
 // @access  Protected
-router.get('/stats', protect, (req: AuthenticatedRequest, res: Response) => {
-  // Simulated project statistics for the dashboard
-  const stats = {
-    totalProjects: 12,
-    activeDeployments: 8,
-    totalDeployments: 147,
-    successRate: 94.5,
-    uptime: 99.97,
-    totalContainers: 15,
-  };
+router.get('/stats', protect, async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user?.id;
 
-  res.json(stats);
+  if (!userId) {
+    return res.status(401).json({ message: 'User unauthorized' });
+  }
+
+  try {
+    const projectCount = await prisma.project.count({
+      where: { userId },
+    });
+
+    const stats = {
+      totalProjects: projectCount,
+      activeDeployments: 8, // simulated for now, will connect to deployment engine in later phase
+      totalDeployments: 147, // simulated for now
+      successRate: 94.5,
+      uptime: 99.97,
+      totalContainers: 15,
+    };
+
+    return res.json(stats);
+  } catch (error: any) {
+    console.error('Error fetching dashboard stats:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
 });
 
 // @desc    Get system metrics (CPU/RAM/Disk)

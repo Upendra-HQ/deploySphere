@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   LogOut, 
@@ -147,6 +148,10 @@ const Dashboard: React.FC = () => {
         <div className="dashboard-nav-brand">
           <Rocket size={24} />
           <span>DeploySphere</span>
+        </div>
+        <div className="dashboard-nav-links">
+          <Link to="/dashboard" className="nav-link active">Dashboard</Link>
+          <Link to="/projects" className="nav-link">Projects</Link>
         </div>
         <div className="dashboard-nav-right">
           <button 

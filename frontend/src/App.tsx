@@ -7,6 +7,8 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import Dashboard from './pages/Dashboard';
+import Projects from './pages/Projects';
+import ProjectForm from './pages/ProjectForm';
 import './index.css';
 
 function App() {
@@ -24,6 +26,30 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects"
+            element={
+              <ProtectedRoute>
+                <Projects />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/new"
+            element={
+              <ProtectedRoute>
+                <ProjectForm />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/edit/:id"
+            element={
+              <ProtectedRoute>
+                <ProjectForm />
               </ProtectedRoute>
             }
           />
