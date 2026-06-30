@@ -11,6 +11,7 @@ import Projects from './pages/Projects';
 import ProjectForm from './pages/ProjectForm';
 import GitHubConnect from './pages/GitHubConnect';
 import DeploymentDetails from './pages/DeploymentDetails';
+import DockerManagement from './pages/DockerManagement';
 import './index.css';
 
 function App() {
@@ -68,6 +69,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <DeploymentDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/docker"
+            element={
+              <ProtectedRoute>
+                <DockerManagement />
               </ProtectedRoute>
             }
           />

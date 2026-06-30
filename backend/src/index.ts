@@ -9,6 +9,7 @@ import githubRoutes from './routes/githubRoutes';
 import webhookRoutes from './routes/webhookRoutes';
 import deploymentRoutes from './routes/deploymentRoutes';
 import jenkinsRoutes from './routes/jenkinsRoutes';
+import dockerRoutes from './routes/dockerRoutes';
 import { initSocketServer } from './services/socketServer';
 
 dotenv.config();
@@ -45,6 +46,9 @@ app.use('/api/deployments', deploymentRoutes);
 
 // Jenkins Routes
 app.use('/api/jenkins', jenkinsRoutes);
+
+// Docker Routes
+app.use('/api/docker', dockerRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

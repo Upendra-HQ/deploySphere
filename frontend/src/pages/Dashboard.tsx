@@ -153,6 +153,7 @@ const Dashboard: React.FC = () => {
           <Link to="/dashboard" className="nav-link active">Dashboard</Link>
           <Link to="/projects" className="nav-link">Projects</Link>
           <Link to="/github-connect" className="nav-link">GitHub</Link>
+          <Link to="/docker" className="nav-link">Docker</Link>
         </div>
         <div className="dashboard-nav-right">
           <button 

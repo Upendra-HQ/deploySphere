@@ -208,6 +208,8 @@ const DeploymentDetails: React.FC = () => {
         <div className="dashboard-nav-links">
           <Link to="/dashboard" className="nav-link">Dashboard</Link>
           <Link to="/projects" className="nav-link">Projects</Link>
+          <Link to="/github-connect" className="nav-link">GitHub</Link>
+          <Link to="/docker" className="nav-link">Docker</Link>
         </div>
         <div className="dashboard-nav-right">
           <Link to="/projects" className="dashboard-logout-btn" style={{ borderColor: 'var(--border-color)', color: 'var(--text-secondary)', background: 'transparent' }}>
