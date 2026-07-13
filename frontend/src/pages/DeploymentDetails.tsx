@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { apiUrl, wsUrl } from '../config/api';
 import { 
-  ArrowLeft, 
   Terminal, 
   Clock, 
   GitCommit, 
@@ -11,8 +11,7 @@ import {
   XCircle, 
   Loader2,
   RefreshCw,
-  Server,
-  FolderOpen
+  Server
 } from 'lucide-react';
 
 interface ProjectInfo {
@@ -46,7 +45,7 @@ const DeploymentDetails: React.FC = () => {
   const fetchDeploymentDetails = async (isPoll = false) => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      const res = await axios.get(`http://localhost:5000/api/deployments/${id}`, { headers });
+      const res = await axios.get(apiUrl(`/api/deployments/${id}`), { headers });
       setDeployment(res.data);
       setError('');
     } catch (err: any) {
@@ -67,7 +66,7 @@ const DeploymentDetails: React.FC = () => {
     if (!id) return;
 
     let socket: WebSocket | null = null;
-    let pollInterval: NodeJS.Timeout | null = null;
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
 
     const startPolling = () => {
       console.log('[CLIENT] Launching HTTP fallback logs polling.');
@@ -80,7 +79,7 @@ const DeploymentDetails: React.FC = () => {
 
     // Try to open WebSocket connection
     try {
-      socket = new WebSocket('ws://localhost:5000');
+      socket = new WebSocket(wsUrl());
 
       socket.onopen = () => {
         console.log('[CLIENT] WebSocket stream connected. Subscribing to build ID:', id);
@@ -227,6 +226,7 @@ const DeploymentDetails: React.FC = () => {
           <span className={`status-badge ${getStatusBadgeClass(deployment.status)}`}>
             {getStatusIcon(deployment.status)}
             {deployment.status}
+            {isWebSocketActive ? ' live' : ' polling'}
           </span>
         </div>
 

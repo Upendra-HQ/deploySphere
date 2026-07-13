@@ -7,8 +7,14 @@ yarn-error.log*
 
 # Database & Environment
 .env
+.env.*
+!.env.example
+!.env.production.example
 *.db
 *.db-journal
+
+# Runtime-generated Nginx project routes
+nginx/conf.d/deploysphere-*.conf
 
 # IDE / System
 .idea/

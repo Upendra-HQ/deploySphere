@@ -1,0 +1,88 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_HUB_CREDENTIALS_ID = 'docker-hub-credentials'
+        EC2_SSH_CREDENTIALS_ID   = 'ec2-ssh-key'
+        EC2_HOST                 = 'ec2-user@54.120.45.12' // Production AWS EC2 target
+        IMAGE_NAME_BACKEND       = 'deploysphere/backend:latest'
+        IMAGE_NAME_FRONTEND      = 'deploysphere/frontend:latest'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/deploysphere/devops-project.git'
+            }
+        }
+
+        stage('Dependency Check') {
+            steps {
+                dir('backend') {
+                    sh 'npm install'
+                }
+                dir('frontend') {
+                    sh 'npm install'
+                }
+            }
+        }
+
+        stage('Backend Compilation & Lints') {
+            steps {
+                dir('backend') {
+                    sh 'npx tsc --noEmit'
+                }
+            }
+        }
+
+        stage('Frontend Build & Compilation') {
+            steps {
+                dir('frontend') {
+                    sh 'npm run build'
+                }
+            }
+        }
+
+        stage('Build Docker Images') {
+            steps {
+                sh "docker build -t ${IMAGE_NAME_BACKEND} ./backend"
+                sh "docker build -t ${IMAGE_NAME_FRONTEND} ./frontend"
+            }
+        }
+
+        stage('Push to Docker Registry') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: DOCKER_HUB_CREDENTIALS_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                    sh "docker push ${IMAGE_NAME_BACKEND}"
+                    sh "docker push ${IMAGE_NAME_FRONTEND}"
+                }
+            }
+        }
+
+        stage('Production AWS EC2 Deploy') {
+            steps {
+                sshagent([EC2_SSH_CREDENTIALS_ID]) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${EC2_HOST} '
+                            cd /home/ec2-user/deploysphere-app &&
+                            git pull origin main &&
+                            docker compose -f docker-compose.prod.yml pull &&
+                            docker compose -f docker-compose.prod.yml up -d --remove-orphans &&
+                            docker system prune -f
+                        '
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Build completed and deployed to AWS EC2 successfully!'
+        }
+        failure {
+            echo 'Production deployment pipeline failed. Check console highlights.'
+        }
+    }
+}

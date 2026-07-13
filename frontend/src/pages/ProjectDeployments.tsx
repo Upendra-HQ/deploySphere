@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 import { 
-  ArrowLeft, 
   History, 
   GitCommit, 
   Clock, 
@@ -13,8 +13,7 @@ import {
   CheckCircle2,
   XCircle,
   Loader2,
-  ExternalLink,
-  FolderOpen
+  ExternalLink
 } from 'lucide-react';
 
 interface Project {
@@ -51,7 +50,7 @@ const ProjectDeployments: React.FC = () => {
       return;
     }
     try {
-      const res = await axios.post(`http://localhost:5000/api/deployments/rollback/${depId}`, {}, {
+      const res = await axios.post(apiUrl(`/api/deployments/rollback/${depId}`), {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       navigate(`/deployments/${res.data.deploymentId}`);
@@ -66,11 +65,11 @@ const ProjectDeployments: React.FC = () => {
       const headers = { Authorization: `Bearer ${token}` };
       
       // 1. Fetch project info
-      const projRes = await axios.get(`http://localhost:5000/api/projects/${id}`, { headers });
+      const projRes = await axios.get(apiUrl(`/api/projects/${id}`), { headers });
       setProject(projRes.data);
 
       // 2. Fetch deployments list
-      const depRes = await axios.get(`http://localhost:5000/api/deployments/project/${id}`, { headers });
+      const depRes = await axios.get(apiUrl(`/api/deployments/project/${id}`), { headers });
       setDeployments(depRes.data);
       
       setError('');
@@ -172,7 +171,7 @@ const ProjectDeployments: React.FC = () => {
               className="deploy-btn" 
               onClick={async () => {
                 try {
-                  const res = await axios.post(`http://localhost:5000/api/deployments/project/${project.id}`, {}, {
+                  const res = await axios.post(apiUrl(`/api/deployments/project/${project.id}`), {}, {
                     headers: { Authorization: `Bearer ${token}` }
                   });
                   navigate(`/deployments/${res.data.deploymentId}`);
@@ -203,12 +202,12 @@ const ProjectDeployments: React.FC = () => {
               <div key={dep.id} className="timeline-node-wrapper" style={{ position: 'relative', marginBottom: '2.5rem', zIndex: 2 }}>
                 
                 {/* NODE DOT INDICATOR */}
-                <div className="timeline-dot" style={{ position: 'absolute', left: '-2.5rem', top: '6px', background: 'var(--bg-primary)', border: '2px solid var(--border-color)', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 10px rgba(0,0,0,0.3)', bordercolor: dep.status === 'SUCCESS' ? '#10b981' : dep.status === 'FAILED' ? '#ef4444' : '#f59e0b' }}>
+                <div className="timeline-dot" style={{ position: 'absolute', left: '-2.5rem', top: '6px', background: 'var(--bg-primary)', border: '2px solid var(--border-color)', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 10px rgba(0,0,0,0.3)', borderColor: dep.status === 'SUCCESS' ? '#10b981' : dep.status === 'FAILED' ? '#ef4444' : '#f59e0b' }}>
                   {getStatusIcon(dep.status)}
                 </div>
 
                 {/* TIMELINE INFO CARD */}
-                <div className="timeline-card form-card" style={{ padding: '1.25rem', transition: 'var(--transition)', hover: { transform: 'translateY(-2px)' } }}>
+                <div className="timeline-card form-card" style={{ padding: '1.25rem', transition: 'var(--transition)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
                     <div>
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>

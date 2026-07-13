@@ -6,6 +6,8 @@ import util from 'util';
 
 import { triggerJenkinsBuild } from './jenkinsService';
 import { emitBuildLog } from './socketServer';
+import { updateNginxConfigForProject } from './nginxService';
+import { notifyDeploymentStatus } from './notificationService';
 
 const execPromise = util.promisify(exec);
 const prisma = new PrismaClient();
@@ -69,6 +71,9 @@ const runBuildPipeline = async (deploymentId: string, projectId: string) => {
     if (!project) {
       throw new Error('Project not found in database');
     }
+
+    // Trigger start of build notification
+    await notifyDeploymentStatus(projectId, deploymentId, 'BUILDING');
 
     await appendLogs(`[INFO] Loaded project settings for "${project.name}" (Framework: ${project.framework}, Branch: ${project.branch})`);
 
@@ -189,6 +194,9 @@ CMD [${project.startCommand ? project.startCommand.split(' ').map(s => `"${s}"`)
             duration: `${duration}s`,
           },
         });
+        // Dynamically compile and reload Nginx configurations
+        await updateNginxConfigForProject(projectId);
+        await notifyDeploymentStatus(projectId, deploymentId, 'SUCCESS');
       } catch (err: any) {
         await appendLogs(`[ERROR] Build step failed: ${err.message}`);
         const duration = Math.round((Date.now() - startTime) / 1000);
@@ -199,6 +207,7 @@ CMD [${project.startCommand ? project.startCommand.split(' ').map(s => `"${s}"`)
             duration: `${duration}s`,
           },
         });
+        await notifyDeploymentStatus(projectId, deploymentId, 'FAILED');
       }
     } else {
       // --- SANDBOX BUILD SIMULATOR (FALLBACK) ---
@@ -234,11 +243,11 @@ CMD [${project.startCommand ? project.startCommand.split(' ').map(s => `"${s}"`)
       await appendLogs('> vite build');
       await appendLogs('vite v5.0.12 building for production...');
       await appendLogs('transforming...');
-      await appendLogs('✓ 245 modules transformed.');
-      await appendLogs('dist/index.html                  0.45 kB │ gzip:  0.28 kB');
-      await appendLogs('dist/assets/index-b4f8c219.css   45.20 kB │ gzip:  8.95 kB');
-      await appendLogs('dist/assets/index-c3d2f97a.js   187.34 kB │ gzip: 54.12 kB');
-      await appendLogs('✓ built in 2.12s');
+      await appendLogs('[SUCCESS] 245 modules transformed.');
+      await appendLogs('dist/index.html                  0.45 kB | gzip:  0.28 kB');
+      await appendLogs('dist/assets/index-b4f8c219.css   45.20 kB | gzip:  8.95 kB');
+      await appendLogs('dist/assets/index-c3d2f97a.js   187.34 kB | gzip: 54.12 kB');
+      await appendLogs('[SUCCESS] built in 2.12s');
       await appendLogs('Step 7/8 : FROM nginx:alpine');
       await appendLogs('Step 8/8 : COPY --from=build /app/dist /usr/share/nginx/html');
       await appendLogs(' ---> Successfully built c3d2f97a1b2c');
@@ -257,6 +266,9 @@ CMD [${project.startCommand ? project.startCommand.split(' ').map(s => `"${s}"`)
           duration: `${duration}s`,
         },
       });
+      // Dynamically compile and reload Nginx configurations (Simulation)
+      await updateNginxConfigForProject(projectId);
+      await notifyDeploymentStatus(projectId, deploymentId, 'SUCCESS');
     }
 
     // Clean up workdir files
@@ -274,5 +286,6 @@ CMD [${project.startCommand ? project.startCommand.split(' ').map(s => `"${s}"`)
         duration: `${duration}s`,
       },
     });
+    await notifyDeploymentStatus(projectId, deploymentId, 'FAILED');
   }
 };

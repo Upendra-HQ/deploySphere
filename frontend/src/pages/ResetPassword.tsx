@@ -86,7 +86,7 @@ const ResetPassword: React.FC = () => {
                 <input
                   id="reset-password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
+                  placeholder="Enter your new password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -110,7 +110,7 @@ const ResetPassword: React.FC = () => {
                 <input
                   id="reset-confirm"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
+                  placeholder="Confirm your new password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required

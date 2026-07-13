@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { CheckCircle, XCircle, Rocket, Loader } from 'lucide-react';
@@ -9,9 +9,12 @@ const VerifyEmail: React.FC = () => {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
   const { verifyEmail } = useAuth();
+  const hasVerified = useRef(false);
 
   useEffect(() => {
     const verify = async () => {
+      if (hasVerified.current) return;
+      hasVerified.current = true;
       if (!token) {
         setStatus('error');
         setMessage('Missing verification token. Please check your email link.');

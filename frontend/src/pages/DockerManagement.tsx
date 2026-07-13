@@ -2,19 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 import { 
-  Cpu, 
   RefreshCw, 
   Play, 
   Square, 
   RotateCw, 
   Trash2, 
   Terminal, 
-  Info,
   Layers,
   X,
-  Server,
-  FolderOpen
+  Server
 } from 'lucide-react';
 
 interface Container {
@@ -29,7 +27,8 @@ interface Container {
 }
 
 const DockerManagement: React.FC = () => {
-  const { token } = useAuth();
+  const { user, token } = useAuth();
+  const isAdmin = user && (user.email === 'admin@deploysphere.local' || user.email.startsWith('admin@'));
   const [containers, setContainers] = useState<Container[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -45,7 +44,7 @@ const DockerManagement: React.FC = () => {
 
   const fetchContainers = async (isPoll = false) => {
     try {
-      const res = await axios.get('http://localhost:5000/api/docker/containers', {
+      const res = await axios.get(apiUrl('/api/docker/containers'), {
         headers: { Authorization: `Bearer ${token}` }
       });
       setContainers(res.data);
@@ -75,7 +74,7 @@ const DockerManagement: React.FC = () => {
     setActionId(`${projectId}-${action}`);
     try {
       await axios.post(
-        `http://localhost:5000/api/docker/containers/${projectId}/action`,
+        apiUrl(`/api/docker/containers/${projectId}/action`),
         { action },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -95,7 +94,7 @@ const DockerManagement: React.FC = () => {
     setContainerLogs('');
 
     try {
-      const res = await axios.get(`http://localhost:5000/api/docker/containers/${container.projectId}/logs`, {
+      const res = await axios.get(apiUrl(`/api/docker/containers/${container.projectId}/logs`), {
         headers: { Authorization: `Bearer ${token}` }
       });
       setContainerLogs(res.data.logs);
@@ -133,6 +132,10 @@ const DockerManagement: React.FC = () => {
           <Link to="/projects" className="nav-link">Projects</Link>
           <Link to="/github-connect" className="nav-link">GitHub</Link>
           <Link to="/docker" className="nav-link active">Docker</Link>
+          <Link to="/monitoring" className="nav-link">Monitoring</Link>
+          <Link to="/proxy" className="nav-link">Routing</Link>
+          {isAdmin && <Link to="/admin" className="nav-link">Admin</Link>}
+          <Link to="/analytics" className="nav-link">Analytics</Link>
         </div>
         <div className="dashboard-nav-right">
           <button 

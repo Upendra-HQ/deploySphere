@@ -81,7 +81,7 @@ export const getProjectById = async (req: AuthenticatedRequest, res: Response) =
 // @access  Protected
 export const createProject = async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user?.id;
-  const { name, repositoryUrl, branch, framework, buildCommand, startCommand, useJenkins, jenkinsUrl, jenkinsUser, jenkinsToken, jenkinsJobName, envVariables } = req.body;
+  const { name, repositoryUrl, branch, framework, buildCommand, startCommand, useJenkins, jenkinsUrl, jenkinsUser, jenkinsToken, jenkinsJobName, envVariables, deploymentStrategy, canaryWeight } = req.body;
 
   if (!userId) {
     return res.status(401).json({ message: 'User unauthorized' });
@@ -110,6 +110,8 @@ export const createProject = async (req: AuthenticatedRequest, res: Response) =>
         jenkinsUser: jenkinsUser || '',
         jenkinsToken: jenkinsToken || '',
         jenkinsJobName: jenkinsJobName || '',
+        deploymentStrategy: deploymentStrategy || 'STANDARD',
+        canaryWeight: canaryWeight !== undefined ? parseInt(canaryWeight, 10) : 10,
         userId,
         envVariables: envVariables && envVariables.length > 0 
           ? {
@@ -138,7 +140,7 @@ export const createProject = async (req: AuthenticatedRequest, res: Response) =>
 export const updateProject = async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user?.id;
   const { id } = req.params;
-  const { name, repositoryUrl, branch, framework, buildCommand, startCommand, useJenkins, jenkinsUrl, jenkinsUser, jenkinsToken, jenkinsJobName, envVariables } = req.body;
+  const { name, repositoryUrl, branch, framework, buildCommand, startCommand, useJenkins, jenkinsUrl, jenkinsUser, jenkinsToken, jenkinsJobName, envVariables, deploymentStrategy, canaryWeight } = req.body;
 
   if (!userId) {
     return res.status(401).json({ message: 'User unauthorized' });
@@ -177,6 +179,8 @@ export const updateProject = async (req: AuthenticatedRequest, res: Response) =>
         jenkinsUser: jenkinsUser !== undefined ? jenkinsUser : project.jenkinsUser,
         jenkinsToken: jenkinsToken !== undefined ? jenkinsToken : project.jenkinsToken,
         jenkinsJobName: jenkinsJobName !== undefined ? jenkinsJobName : project.jenkinsJobName,
+        deploymentStrategy: deploymentStrategy !== undefined ? deploymentStrategy : project.deploymentStrategy,
+        canaryWeight: canaryWeight !== undefined ? parseInt(canaryWeight, 10) : project.canaryWeight,
       },
     });
 

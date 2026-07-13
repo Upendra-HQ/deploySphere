@@ -9,6 +9,8 @@ export interface AuthenticatedRequest extends Request {
     id: string;
     email: string;
     isVerified: boolean;
+    githubToken?: string | null;
+    githubUsername?: string | null;
   };
 }
 
@@ -22,7 +24,13 @@ export const protect = async (req: AuthenticatedRequest, res: Response, next: Ne
 
       const user = await prisma.user.findUnique({
         where: { id: decoded.id },
-        select: { id: true, email: true, isVerified: true },
+        select: { 
+          id: true, 
+          email: true, 
+          isVerified: true, 
+          githubToken: true, 
+          githubUsername: true 
+        },
       });
 
       if (!user) {

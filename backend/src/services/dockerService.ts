@@ -72,8 +72,8 @@ export const listHostContainers = async (userId: string): Promise<ContainerInfo[
               projectId: matchedProject.id,
               image,
               status: isRunning ? 'RUNNING' : 'STOPPED',
-              ports: ports || '—',
-              created: created || '—',
+              ports: ports || '-',
+              created: created || '-',
             });
           }
         }

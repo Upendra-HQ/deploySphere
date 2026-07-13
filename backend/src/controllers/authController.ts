@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
+import { FRONTEND_URL } from '../config/appConfig';
 
 const prisma = new PrismaClient();
 
@@ -69,7 +70,7 @@ export const register = async (req: Request, res: Response) => {
     });
 
     // Send simulation email
-    const verificationUrl = `http://localhost:5173/verify-email?token=${tokenStr}`;
+    const verificationUrl = `${FRONTEND_URL}/verify-email?token=${tokenStr}`;
     sendSimulatedEmail(
       email,
       'Verify your DeploySphere Account',
@@ -203,7 +204,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     });
 
     // Send simulation email
-    const resetUrl = `http://localhost:5173/reset-password?token=${tokenStr}`;
+    const resetUrl = `${FRONTEND_URL}/reset-password?token=${tokenStr}`;
     sendSimulatedEmail(
       email,
       'Reset your DeploySphere Password',

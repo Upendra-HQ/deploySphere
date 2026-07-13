@@ -2,20 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 import { 
-  GitBranch, 
   Github, 
   CheckCircle, 
   AlertTriangle,
   ArrowLeft,
   Loader,
-  RefreshCw,
-  LogOut,
   FolderOpen
 } from 'lucide-react';
 
 const GitHubConnect: React.FC = () => {
-  const { token } = useAuth();
+  const { user, token } = useAuth();
+  const isAdmin = user && (user.email === 'admin@deploysphere.local' || user.email.startsWith('admin@'));
   const [searchParams, setSearchParams] = useSearchParams();
   
   // Connection states
@@ -30,7 +29,7 @@ const GitHubConnect: React.FC = () => {
 
   const checkConnectionStatus = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/auth/me', {
+      const res = await axios.get(apiUrl('/api/auth/me'), {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data.user?.githubToken) {
@@ -70,7 +69,7 @@ const GitHubConnect: React.FC = () => {
     setActionLoading(true);
     setErrorAlert('');
     try {
-      const res = await axios.get('http://localhost:5000/api/github/auth-url', {
+      const res = await axios.get(apiUrl('/api/github/auth-url'), {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Redirect browser to authorization URI
@@ -88,7 +87,7 @@ const GitHubConnect: React.FC = () => {
       setActionLoading(true);
       setErrorAlert('');
       try {
-        await axios.post('http://localhost:5000/api/github/disconnect', {}, {
+        await axios.post(apiUrl('/api/github/disconnect'), {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setConnected(false);
@@ -131,6 +130,10 @@ const GitHubConnect: React.FC = () => {
           <Link to="/projects" className="nav-link">Projects</Link>
           <Link to="/github-connect" className="nav-link active">GitHub</Link>
           <Link to="/docker" className="nav-link">Docker</Link>
+          <Link to="/monitoring" className="nav-link">Monitoring</Link>
+          <Link to="/proxy" className="nav-link">Routing</Link>
+          {isAdmin && <Link to="/admin" className="nav-link">Admin</Link>}
+          <Link to="/analytics" className="nav-link">Analytics</Link>
         </div>
         <div className="dashboard-nav-right">
           <Link to="/projects" className="dashboard-logout-btn" style={{ borderColor: 'var(--border-color)', color: 'var(--text-secondary)', background: 'transparent' }}>

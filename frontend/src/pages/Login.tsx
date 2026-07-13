@@ -72,7 +72,7 @@ const Login: React.FC = () => {
               <input
                 id="login-password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

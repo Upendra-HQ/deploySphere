@@ -2,13 +2,14 @@ import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
+import { BACKEND_URL, FRONTEND_URL } from '../config/appConfig';
 
 const prisma = new PrismaClient();
 
 // In production, register your OAuth app and add these to .env
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || '';
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || '';
-const REDIRECT_URI = 'http://localhost:5000/api/github/callback';
+const REDIRECT_URI = process.env.GITHUB_REDIRECT_URI || `${BACKEND_URL}/api/github/callback`;
 
 const isMockMode = !GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET;
 
@@ -23,7 +24,7 @@ export const getAuthUrl = (req: AuthenticatedRequest, res: Response) => {
 
   if (isMockMode) {
     // Return a local mock authorization redirect URL
-    const mockAuthUrl = `http://localhost:5000/api/github/callback?code=mock_code_for_user_${userId}&state=${userId}`;
+    const mockAuthUrl = `${BACKEND_URL}/api/github/callback?code=mock_code_for_user_${userId}&state=${userId}`;
     return res.json({ url: mockAuthUrl, mock: true });
   }
 
@@ -89,10 +90,10 @@ export const callback = async (req: Request | any, res: Response) => {
     });
 
     // Redirect user back to frontend connected settings
-    return res.redirect('http://localhost:5173/github-connect?status=success');
+    return res.redirect(`${FRONTEND_URL}/github-connect?status=success`);
   } catch (error: any) {
     console.error('GitHub OAuth Error:', error);
-    return res.redirect('http://localhost:5173/github-connect?status=error&message=' + encodeURIComponent(error.message));
+    return res.redirect(`${FRONTEND_URL}/github-connect?status=error&message=${encodeURIComponent(error.message)}`);
   }
 };
 

@@ -10,14 +10,28 @@ import webhookRoutes from './routes/webhookRoutes';
 import deploymentRoutes from './routes/deploymentRoutes';
 import jenkinsRoutes from './routes/jenkinsRoutes';
 import dockerRoutes from './routes/dockerRoutes';
+import monitoringRoutes from './routes/monitoringRoutes';
+import proxyRoutes from './routes/proxyRoutes';
+import sslRoutes from './routes/sslRoutes';
+import adminRoutes from './routes/adminRoutes';
+import analyticsRoutes from './routes/analyticsRoutes';
+import aiRoutes from './routes/aiRoutes';
 import { initSocketServer } from './services/socketServer';
+import { securityHeaders, rateLimiter } from './middleware/securityMiddleware';
+import { CORS_ORIGINS } from './config/appConfig';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(securityHeaders);
+app.use(rateLimiter(15 * 60 * 1000, 250)); // 250 requests per 15 minutes limit
+
+app.use(cors({
+  origin: CORS_ORIGINS,
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -49,6 +63,24 @@ app.use('/api/jenkins', jenkinsRoutes);
 
 // Docker Routes
 app.use('/api/docker', dockerRoutes);
+
+// Monitoring Routes
+app.use('/api/monitoring', monitoringRoutes);
+
+// Proxy Routes
+app.use('/api/proxy', proxyRoutes);
+
+// SSL Routes
+app.use('/api/ssl', sslRoutes);
+
+// Admin Routes
+app.use('/api/admin', adminRoutes);
+
+// Analytics Routes
+app.use('/api/analytics', analyticsRoutes);
+
+// AI Routes
+app.use('/api/ai', aiRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

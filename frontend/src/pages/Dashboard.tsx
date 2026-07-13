@@ -18,6 +18,7 @@ import {
   Layers
 } from 'lucide-react';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 import { 
   AreaChart, 
   Area, 
@@ -28,7 +29,7 @@ import {
   ResponsiveContainer 
 } from 'recharts';
 
-const API_URL = 'http://localhost:5000/api/dashboard';
+const API_URL = apiUrl('/api/dashboard');
 
 interface Stats {
   totalProjects: number;
@@ -81,7 +82,8 @@ interface Deployment {
 }
 
 const Dashboard: React.FC = () => {
-  const { token, logout } = useAuth();
+  const { user, token, logout } = useAuth();
+  const isAdmin = user && (user.email === 'admin@deploysphere.local' || user.email.startsWith('admin@'));
   const [stats, setStats] = useState<Stats | null>(null);
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [deployments, setDeployments] = useState<Deployment[]>([]);
@@ -154,6 +156,10 @@ const Dashboard: React.FC = () => {
           <Link to="/projects" className="nav-link">Projects</Link>
           <Link to="/github-connect" className="nav-link">GitHub</Link>
           <Link to="/docker" className="nav-link">Docker</Link>
+          <Link to="/monitoring" className="nav-link">Monitoring</Link>
+          <Link to="/proxy" className="nav-link">Routing</Link>
+          {isAdmin && <Link to="/admin" className="nav-link">Admin</Link>}
+          <Link to="/analytics" className="nav-link">Analytics</Link>
         </div>
         <div className="dashboard-nav-right">
           <button 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 import { 
   Plus, 
   Folder, 
@@ -11,9 +12,7 @@ import {
   ExternalLink,
   Code,
   Layout,
-  RefreshCw,
   FolderOpen,
-  Terminal,
   CheckCircle2,
   XCircle,
   Loader2,
@@ -45,7 +44,8 @@ interface Project {
 }
 
 const Projects: React.FC = () => {
-  const { token } = useAuth();
+  const { user, token } = useAuth();
+  const isAdmin = user && (user.email === 'admin@deploysphere.local' || user.email.startsWith('admin@'));
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -55,7 +55,7 @@ const Projects: React.FC = () => {
 
   const fetchProjects = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/projects', {
+      const res = await axios.get(apiUrl('/api/projects'), {
         headers: { Authorization: `Bearer ${token}` }
       });
       setProjects(res.data);
@@ -79,7 +79,7 @@ const Projects: React.FC = () => {
     if (window.confirm(`Are you sure you want to delete the project "${name}"? All configuration, environment variables, and records will be permanently lost.`)) {
       setDeletingId(id);
       try {
-        await axios.delete(`http://localhost:5000/api/projects/${id}`, {
+        await axios.delete(apiUrl(`/api/projects/${id}`), {
           headers: { Authorization: `Bearer ${token}` }
         });
         setProjects(projects.filter(p => p.id !== id));
@@ -95,7 +95,7 @@ const Projects: React.FC = () => {
   const handleDeploy = async (projectId: string) => {
     setDeployingId(projectId);
     try {
-      const res = await axios.post(`http://localhost:5000/api/deployments/project/${projectId}`, {}, {
+      const res = await axios.post(apiUrl(`/api/deployments/project/${projectId}`), {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const { deploymentId } = res.data;
@@ -167,6 +167,11 @@ const Projects: React.FC = () => {
           <Link to="/dashboard" className="nav-link">Dashboard</Link>
           <Link to="/projects" className="nav-link active">Projects</Link>
           <Link to="/github-connect" className="nav-link">GitHub</Link>
+          <Link to="/docker" className="nav-link">Docker</Link>
+          <Link to="/monitoring" className="nav-link">Monitoring</Link>
+          <Link to="/proxy" className="nav-link">Routing</Link>
+          {isAdmin && <Link to="/admin" className="nav-link">Admin</Link>}
+          <Link to="/analytics" className="nav-link">Analytics</Link>
         </div>
         <div className="dashboard-nav-right">
           <Link to="/projects/new" className="dashboard-create-btn">

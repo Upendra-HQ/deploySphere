@@ -238,7 +238,7 @@ export const triggerJenkinsBuild = async (
       await appendLogs(`$ ${project.buildCommand || 'npm run build'}`);
       await appendLogs('> vite build');
       await appendLogs('vite v5.0.12 building for production...');
-      await appendLogs('✓ 245 modules transformed.');
+      await appendLogs('[SUCCESS] 245 modules transformed.');
       await appendLogs('dist/index.html                  0.45 kB');
       await appendLogs('dist/assets/index-b4f8c219.css   45.20 kB');
       await appendLogs('dist/assets/index-c3d2f97a.js   187.34 kB');

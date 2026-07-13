@@ -13,9 +13,11 @@ const router = Router();
 // Protect all routes
 router.use(protect);
 
+import { validateProjectName } from '../middleware/validationMiddleware';
+
 router.route('/')
   .get(getProjects)
-  .post(createProject);
+  .post(validateProjectName, createProject);
 
 router.route('/:id')
   .get(getProjectById)

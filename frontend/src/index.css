@@ -1439,3 +1439,220 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================
+   Product polish pass
+   ============================ */
+:root {
+  --bg-primary: #0b0f14;
+  --bg-secondary: #111820;
+  --bg-card: #151d26;
+  --bg-input: #101820;
+  --border-color: #273342;
+  --border-focus: #4f8cff;
+  --text-primary: #f4f7fb;
+  --text-secondary: #aab6c5;
+  --text-muted: #748296;
+  --accent-gradient: linear-gradient(135deg, #2563eb, #14b8a6);
+  --accent-solid: #3b82f6;
+  --accent-hover: #7dd3fc;
+  --shadow-glow: 0 12px 28px rgba(20, 184, 166, 0.12);
+  --shadow-card: 0 18px 42px rgba(0, 0, 0, 0.32);
+  --radius: 8px;
+  --radius-sm: 6px;
+  --transition: 160ms ease;
+}
+
+body {
+  background:
+    linear-gradient(180deg, rgba(20, 184, 166, 0.04), transparent 340px),
+    var(--bg-primary);
+}
+
+.auth-bg-decoration,
+.auth-bg-orb {
+  display: none;
+}
+
+.auth-page {
+  background:
+    linear-gradient(90deg, rgba(59, 130, 246, 0.08), transparent 38%),
+    linear-gradient(180deg, #0d141b, #0b0f14);
+}
+
+.auth-card,
+.form-card,
+.stat-card,
+.metric-chart-card,
+.deployments-section,
+.project-card,
+.empty-projects-state {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
+  backdrop-filter: none;
+}
+
+.auth-card {
+  border-radius: 10px;
+  padding: 2.25rem;
+}
+
+.auth-logo,
+.dashboard-create-btn,
+.auth-btn,
+.deploy-btn {
+  background: var(--accent-gradient);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+}
+
+.auth-header h1,
+.projects-header-row h1,
+.form-card h2 {
+  letter-spacing: 0;
+}
+
+.auth-input-wrapper input,
+.auth-input-group > input,
+.form-select,
+.env-key-input,
+.env-val-input,
+textarea {
+  background: var(--bg-input);
+  border-color: var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.dashboard-nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(17, 24, 32, 0.94);
+  border-bottom-color: var(--border-color);
+  backdrop-filter: blur(10px);
+}
+
+.dashboard-nav-brand {
+  color: #ffffff;
+}
+
+.dashboard-nav-links {
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.nav-link {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+}
+
+.nav-link.active,
+.nav-link:hover {
+  color: #ffffff;
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.22);
+}
+
+.dashboard-container {
+  max-width: 1320px;
+  padding-top: 1.75rem;
+}
+
+.projects-header-row {
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.projects-header-row p,
+.form-subtitle {
+  color: var(--text-secondary);
+}
+
+.stats-grid,
+.metrics-grid,
+.projects-grid {
+  gap: 1rem;
+}
+
+.stat-card,
+.project-card {
+  padding: 1.25rem;
+}
+
+.stat-card:hover,
+.project-card:hover,
+.timeline-card:hover {
+  transform: translateY(-1px);
+  border-color: #38506a;
+  box-shadow: var(--shadow-glow);
+}
+
+.stat-icon-wrapper.blue,
+.project-type-icon {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+}
+
+.stat-icon-wrapper.green {
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.stat-icon-wrapper.orange {
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.stat-icon-wrapper.purple {
+  background: rgba(20, 184, 166, 0.12);
+  color: #2dd4bf;
+}
+
+.project-framework-tag,
+.branch-badge,
+.badge,
+.status-badge {
+  border-radius: 999px;
+}
+
+.terminal-container,
+.modal-body {
+  background: #05080d !important;
+  border-color: #203044 !important;
+}
+
+.dashboard-refresh-btn,
+.dashboard-logout-btn,
+.project-action-btn,
+.add-env-btn {
+  border-radius: var(--radius-sm);
+}
+
+.text-purple {
+  color: #2dd4bf;
+}
+
+.text-warning {
+  color: #f59e0b;
+}
+
+@media (max-width: 860px) {
+  .dashboard-nav {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dashboard-nav-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .projects-header-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .form-grid,
+  .project-detail-row {
+    grid-template-columns: 1fr;
+  }
+}

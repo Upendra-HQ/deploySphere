@@ -204,7 +204,7 @@ router.get('/deployments', protect, async (req: AuthenticatedRequest, res: Respo
       commit: dep.commitHash || 'head',
       commitMessage: dep.commitMsg || 'Triggered build',
       status: dep.status.toLowerCase() as 'success' | 'failed' | 'building',
-      duration: dep.duration || '—',
+      duration: dep.duration || '-',
       deployedAt: dep.createdAt.toISOString(),
       deployedBy: 'User',
     }));

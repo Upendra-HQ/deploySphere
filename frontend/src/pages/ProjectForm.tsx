@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 import { 
   ArrowLeft, 
   Save, 
@@ -11,7 +12,6 @@ import {
   Settings,
   PlusCircle,
   Github,
-  CheckCircle,
   ToggleLeft,
   ToggleRight,
   Loader,
@@ -49,6 +49,8 @@ const ProjectForm: React.FC = () => {
   const [buildCommand, setBuildCommand] = useState('');
   const [startCommand, setStartCommand] = useState('');
   const [envVariables, setEnvVariables] = useState<EnvVarInput[]>([]);
+  const [deploymentStrategy, setDeploymentStrategy] = useState<'STANDARD' | 'BLUE_GREEN' | 'CANARY'>('STANDARD');
+  const [canaryWeight, setCanaryWeight] = useState(10);
 
   // Jenkins Config States
   const [useJenkins, setUseJenkins] = useState(false);
@@ -107,7 +109,7 @@ const ProjectForm: React.FC = () => {
         const headers = { Authorization: `Bearer ${token}` };
 
         // Check if user has connected GitHub
-        const meRes = await axios.get('http://localhost:5000/api/auth/me', { headers });
+        const meRes = await axios.get(apiUrl('/api/auth/me'), { headers });
         const hasGithub = !!meRes.data.user?.githubToken;
         setIsGithubConnected(hasGithub);
         if (hasGithub) {
@@ -116,7 +118,7 @@ const ProjectForm: React.FC = () => {
 
         // If editing, load project details
         if (isEditMode) {
-          const projectRes = await axios.get(`http://localhost:5000/api/projects/${id}`, { headers });
+          const projectRes = await axios.get(apiUrl(`/api/projects/${id}`), { headers });
           const project = projectRes.data;
           setName(project.name);
           setRepositoryUrl(project.repositoryUrl);
@@ -130,10 +132,12 @@ const ProjectForm: React.FC = () => {
           setJenkinsUser(project.jenkinsUser || '');
           setJenkinsToken(project.jenkinsToken || '');
           setJenkinsJobName(project.jenkinsJobName || '');
+          setDeploymentStrategy(project.deploymentStrategy || 'STANDARD');
+          setCanaryWeight(project.canaryWeight !== undefined ? project.canaryWeight : 10);
           
           if (project.useJenkins) {
             try {
-              const jkRes = await axios.get(`http://localhost:5000/api/jenkins/jenkinsfile/${id}`, { headers });
+              const jkRes = await axios.get(apiUrl(`/api/jenkins/jenkinsfile/${id}`), { headers });
               setJenkinsfile(jkRes.data.jenkinsfile);
             } catch {}
           }
@@ -149,7 +153,7 @@ const ProjectForm: React.FC = () => {
         // Load repository lists if connected and not in manual mode
         if (hasGithub && !isEditMode) {
           setReposLoading(true);
-          const reposRes = await axios.get('http://localhost:5000/api/github/repos', { headers });
+          const reposRes = await axios.get(apiUrl('/api/github/repos'), { headers });
           setGithubRepos(reposRes.data);
           setReposLoading(false);
         }
@@ -183,7 +187,7 @@ const ProjectForm: React.FC = () => {
       try {
         const headers = { Authorization: `Bearer ${token}` };
         const [owner, repoName] = repo.fullName.split('/');
-        const res = await axios.get(`http://localhost:5000/api/github/repos/${owner}/${repoName}/branches`, { headers });
+        const res = await axios.get(apiUrl(`/api/github/repos/${owner}/${repoName}/branches`), { headers });
         setGithubBranches(res.data);
         if (res.data.length > 0) {
           setBranch(res.data[0].name);
@@ -259,15 +263,17 @@ const ProjectForm: React.FC = () => {
         jenkinsUser,
         jenkinsToken,
         jenkinsJobName,
+        deploymentStrategy,
+        canaryWeight,
         envVariables: validEnvVars.map(v => ({ key: v.key.trim(), value: v.value.trim() }))
       };
 
       const headers = { Authorization: `Bearer ${token}` };
 
       if (isEditMode) {
-        await axios.put(`http://localhost:5000/api/projects/${id}`, payload, { headers });
+        await axios.put(apiUrl(`/api/projects/${id}`), payload, { headers });
       } else {
-        await axios.post('http://localhost:5000/api/projects', payload, { headers });
+        await axios.post(apiUrl('/api/projects'), payload, { headers });
       }
 
       navigate('/projects');
@@ -510,6 +516,46 @@ const ProjectForm: React.FC = () => {
             </section>
 
             <section className="form-section">
+              <h3>Deployment Strategy & Traffic Mappings</h3>
+              <div className="form-grid">
+                <div className="auth-input-group" style={{ gridColumn: 'span 2' }}>
+                  <label htmlFor="proj-strategy">Routing Strategy</label>
+                  <select
+                    id="proj-strategy"
+                    value={deploymentStrategy}
+                    onChange={(e) => setDeploymentStrategy(e.target.value as any)}
+                    className="auth-input"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.2)', color: '#fff', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', padding: '0.6rem' }}
+                  >
+                    <option value="STANDARD">Standard Upstream (Direct Single Container)</option>
+                    <option value="BLUE_GREEN">Blue-Green (Failover standby backup container)</option>
+                    <option value="CANARY">Canary upstreams (Weighted split traffic)</option>
+                  </select>
+                </div>
+
+                {deploymentStrategy === 'CANARY' && (
+                  <div className="auth-input-group" style={{ gridColumn: 'span 2' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <label htmlFor="canary-weight">Canary Traffic Weight (Green Container): {canaryWeight}%</label>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--accent-hover)' }}>Production Weight (Blue): {100 - canaryWeight}%</span>
+                    </div>
+                    <input
+                      id="canary-weight"
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="5"
+                      value={canaryWeight}
+                      onChange={(e) => setCanaryWeight(parseInt(e.target.value, 10))}
+                      style={{ width: '100%', accentColor: 'var(--accent-solid)' }}
+                    />
+                    <span className="input-helper">Determine what percentage of network request loads are automatically routed to the secondary Canary container.</span>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <section className="form-section">
               <div className="section-title-row">
                 <h3>Environment Variables (Secrets)</h3>
                 <button 
@@ -623,7 +669,7 @@ const ProjectForm: React.FC = () => {
                       <input
                         id="jk-token"
                         type="password"
-                        placeholder="••••••••••••••••••••"
+                        placeholder="Enter API token"
                         value={jenkinsToken}
                         onChange={(e) => setJenkinsToken(e.target.value)}
                       />
@@ -638,7 +684,7 @@ const ProjectForm: React.FC = () => {
                         style={{ border: '1px solid var(--border-color)', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: 'var(--radius-sm)', background: 'rgba(255,255,255,0.02)' }}
                         onClick={async () => {
                           try {
-                            const jkRes = await axios.get(`http://localhost:5000/api/jenkins/jenkinsfile/${id}`, {
+                            const jkRes = await axios.get(apiUrl(`/api/jenkins/jenkinsfile/${id}`), {
                               headers: { Authorization: `Bearer ${token}` }
                             });
                             setJenkinsfile(jkRes.data.jenkinsfile);
@@ -668,7 +714,7 @@ const ProjectForm: React.FC = () => {
                               Copy Code
                             </button>
                           </div>
-                          <pre style={{ margin: 0, fontFamily: 'monospace', fontSize: '0.8rem', lineHeight: '1.4', overflowX: 'auto', maxH: '250px', color: '#cbd5e1', whiteSpace: 'pre' }}>
+                          <pre style={{ margin: 0, fontFamily: 'monospace', fontSize: '0.8rem', lineHeight: '1.4', overflowX: 'auto', maxHeight: '250px', color: '#cbd5e1', whiteSpace: 'pre' }}>
                             {jenkinsfile}
                           </pre>
                         </div>

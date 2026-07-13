@@ -94,7 +94,7 @@ const Register: React.FC = () => {
               <input
                 id="register-password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
+                placeholder="Create a password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -118,7 +118,7 @@ const Register: React.FC = () => {
               <input
                 id="register-confirm"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
+                placeholder="Confirm your password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required

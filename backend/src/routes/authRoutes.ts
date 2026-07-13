@@ -10,8 +10,10 @@ import { protect, AuthenticatedRequest } from '../middleware/authMiddleware';
 
 const router = Router();
 
+import { validateRegister } from '../middleware/validationMiddleware';
+
 // Public routes
-router.post('/register', register);
+router.post('/register', validateRegister, register);
 router.post('/login', login);
 router.get('/verify-email', verifyEmail);
 router.post('/forgot-password', forgotPassword);

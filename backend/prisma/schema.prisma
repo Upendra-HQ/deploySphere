@@ -53,6 +53,8 @@ model Project {
   jenkinsUser    String?
   jenkinsToken   String?
   jenkinsJobName String?
+  deploymentStrategy String    @default("STANDARD")
+  canaryWeight       Int       @default(10)
   userId         String
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
