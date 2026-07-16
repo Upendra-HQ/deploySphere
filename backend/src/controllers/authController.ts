@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 import { FRONTEND_URL } from '../config/appConfig';
+import { sendEmail } from '../services/notificationService';
 
 const prisma = new PrismaClient();
 
@@ -18,16 +19,6 @@ const generateToken = (id: string) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'deploysphere-super-secret-jwt-key-2026', {
     expiresIn: '30d',
   });
-};
-
-// Simulated email sender for development convenience
-const sendSimulatedEmail = (to: string, subject: string, html: string, token: string) => {
-  console.log('\n=================== SIMULATED EMAIL ===================');
-  console.log(`To:      ${to}`);
-  console.log(`Subject: ${subject}`);
-  console.log(`Token:   ${token}`);
-  console.log(`Content:\n${html.replace(/<[^>]*>/g, '')}`); // Plain text conversion
-  console.log('=======================================================\n');
 };
 
 // @desc    Register a new user
@@ -69,13 +60,11 @@ export const register = async (req: Request, res: Response) => {
       },
     });
 
-    // Send simulation email
     const verificationUrl = `${FRONTEND_URL}/verify-email?token=${tokenStr}`;
-    sendSimulatedEmail(
+    await sendEmail(
       email,
       'Verify your DeploySphere Account',
-      `Please verify your account by clicking this link: <a href="${verificationUrl}">${verificationUrl}</a>`,
-      tokenStr
+      `Please verify your account by clicking this link: <a href="${verificationUrl}">${verificationUrl}</a>`
     );
 
     return res.status(201).json({
@@ -203,13 +192,11 @@ export const forgotPassword = async (req: Request, res: Response) => {
       },
     });
 
-    // Send simulation email
     const resetUrl = `${FRONTEND_URL}/reset-password?token=${tokenStr}`;
-    sendSimulatedEmail(
+    await sendEmail(
       email,
       'Reset your DeploySphere Password',
-      `You can reset your password by clicking this link: <a href="${resetUrl}">${resetUrl}</a>`,
-      tokenStr
+      `You can reset your password by clicking this link: <a href="${resetUrl}">${resetUrl}</a>`
     );
 
     return res.json({ message: 'If an account exists, a password reset link has been sent.' });
