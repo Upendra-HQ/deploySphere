@@ -4,6 +4,7 @@ import { FRONTEND_URL } from '../config/appConfig';
 
 const prisma = new PrismaClient();
 const EMAIL_SERVICE = process.env.EMAIL_SERVICE || 'mock';
+const SMTP_FROM = process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@deploysphere.local';
 
 const createTransporter = () => {
   if (EMAIL_SERVICE === 'smtp') {
@@ -26,7 +27,7 @@ export const sendEmail = async (to: string, subject: string, html: string): Prom
   if (transporter) {
     try {
       await transporter.sendMail({
-        from: '"DeploySphere System" <noreply@deploysphere.local>',
+        from: `"DeploySphere System" <${SMTP_FROM}>`,
         to,
         subject,
         html,
