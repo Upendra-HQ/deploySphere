@@ -34,6 +34,39 @@ export const register = async (req: Request, res: Response) => {
   try {
     const userExists = await prisma.user.findUnique({ where: { email } });
     if (userExists) {
+      if (!userExists.isVerified) {
+        const tokenStr = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+        await prisma.verificationToken.deleteMany({
+          where: {
+            userId: userExists.id,
+            type: TOKEN_TYPE.EMAIL_VERIFICATION,
+          },
+        });
+
+        await prisma.verificationToken.create({
+          data: {
+            userId: userExists.id,
+            token: tokenStr,
+            type: TOKEN_TYPE.EMAIL_VERIFICATION,
+            expiresAt,
+          },
+        });
+
+        const verificationUrl = `${FRONTEND_URL}/verify-email?token=${tokenStr}`;
+        await sendEmail(
+          email,
+          'Verify your DeploySphere Account',
+          `Please verify your account by clicking this link: <a href="${verificationUrl}">${verificationUrl}</a>`
+        );
+
+        return res.status(200).json({
+          message: 'Verification email sent again. Please check your email to verify your account.',
+          userId: userExists.id,
+        });
+      }
+
       return res.status(400).json({ message: 'User already exists' });
     }
 
