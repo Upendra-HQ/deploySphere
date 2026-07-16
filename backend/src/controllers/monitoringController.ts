@@ -5,7 +5,10 @@ import axios from 'axios';
 import net from 'net';
 
 const prisma = new PrismaClient();
-const PROMETHEUS_URL = process.env.PROMETHEUS_URL || 'http://localhost:9090';
+const PROMETHEUS_URL = process.env.PROMETHEUS_URL || 'http://prometheus:9090';
+const GRAFANA_URL = process.env.GRAFANA_URL || 'http://grafana:3000';
+const NODE_EXPORTER_URL = process.env.NODE_EXPORTER_URL || 'http://node-exporter:9100';
+const CADVISOR_URL = process.env.CADVISOR_URL || 'http://cadvisor:8080';
 
 // Helper: Check if a port is open
 const checkPort = (port: number, host: string = 'localhost', timeout = 1000): Promise<boolean> => {
@@ -28,6 +31,12 @@ const checkPort = (port: number, host: string = 'localhost', timeout = 1000): Pr
       resolve(false);
     });
   });
+};
+
+const checkUrl = (url: string): Promise<boolean> => {
+  const parsed = new URL(url);
+  const port = parsed.port ? parseInt(parsed.port, 10) : parsed.protocol === 'https:' ? 443 : 80;
+  return checkPort(port, parsed.hostname);
 };
 
 // Helper: Query Prometheus
@@ -53,10 +62,10 @@ const queryPrometheus = async (query: string): Promise<any> => {
 export const getMonitoringStatus = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const [prometheusUp, grafanaUp, nodeExporterUp, cadvisorUp] = await Promise.all([
-      checkPort(9090),
-      checkPort(3000),
-      checkPort(9100),
-      checkPort(8088),
+      checkUrl(PROMETHEUS_URL),
+      checkUrl(GRAFANA_URL),
+      checkUrl(NODE_EXPORTER_URL),
+      checkUrl(CADVISOR_URL),
     ]);
 
     return res.json({
@@ -68,10 +77,10 @@ export const getMonitoringStatus = async (req: AuthenticatedRequest, res: Respon
         cadvisor: cadvisorUp ? 'UP' : 'DOWN',
       },
       endpoints: {
-        prometheus: 'http://localhost:9090',
-        grafana: 'http://localhost:3000',
-        nodeExporter: 'http://localhost:9100/metrics',
-        cadvisor: 'http://localhost:8088/metrics',
+        prometheus: PROMETHEUS_URL,
+        grafana: GRAFANA_URL,
+        nodeExporter: `${NODE_EXPORTER_URL}/metrics`,
+        cadvisor: `${CADVISOR_URL}/metrics`,
       }
     });
   } catch (error: any) {
@@ -92,7 +101,7 @@ export const getMonitoringMetrics = async (req: AuthenticatedRequest, res: Respo
 
   try {
     // 1. Check if Prometheus is up
-    const prometheusUp = await checkPort(9090);
+    const prometheusUp = await checkUrl(PROMETHEUS_URL);
 
     // 2. Fetch projects & containers to identify what to monitor
     const projects = await prisma.project.findMany({

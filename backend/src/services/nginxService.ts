@@ -252,9 +252,11 @@ export const reloadNginx = async (): Promise<boolean> => {
     }
 
     // Check if Nginx container is running
-    const { stdout: containerCheck } = await execPromise('docker ps -q -f name=deploysphere-nginx');
-    if (containerCheck.trim().length > 0) {
-      await execPromise('docker exec deploysphere-nginx nginx -s reload');
+    const containerNames = ['deploysphere-nginx-gateway-prod', 'deploysphere-nginx'];
+    const activeContainer = await findRunningContainer(containerNames);
+
+    if (activeContainer) {
+      await execPromise(`docker exec ${activeContainer} nginx -s reload`);
       console.log('[NGINX SERVICE] Executed native Nginx container config hot-reload.');
       return true;
     } else {
@@ -264,6 +266,17 @@ export const reloadNginx = async (): Promise<boolean> => {
     console.error('[NGINX SERVICE] Failed to execute Nginx reload: ', err.message);
   }
   return false;
+};
+
+const findRunningContainer = async (names: string[]): Promise<string | null> => {
+  for (const name of names) {
+    const { stdout } = await execPromise(`docker ps -q -f name=^/${name}$`);
+    if (stdout.trim().length > 0) {
+      return name;
+    }
+  }
+
+  return null;
 };
 
 // Check Nginx daemon running state (listening on port 80)

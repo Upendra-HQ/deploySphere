@@ -29,6 +29,7 @@ import {
 
 const METRICS_API = apiUrl('/api/monitoring/metrics');
 const STATUS_API = apiUrl('/api/monitoring/status');
+const externalServiceUrl = (port: number) => `${window.location.protocol}//${window.location.hostname}:${port}`;
 
 interface ServiceStatus {
   stackRunning: boolean;
@@ -193,7 +194,7 @@ const Monitoring: React.FC = () => {
             </div>
             <div style={{ display: 'flex', gap: '0.75rem' }}>
               <a 
-                href="http://localhost:3000" 
+                href={externalServiceUrl(3000)}
                 target="_blank" 
                 rel="noreferrer" 
                 className="dashboard-create-btn"
@@ -211,7 +212,7 @@ const Monitoring: React.FC = () => {
                 <span>Open Grafana</span>
               </a>
               <a 
-                href="http://localhost:9090" 
+                href={externalServiceUrl(9090)}
                 target="_blank" 
                 rel="noreferrer" 
                 className="dashboard-create-btn"
