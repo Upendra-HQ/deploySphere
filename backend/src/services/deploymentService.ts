@@ -193,7 +193,7 @@ CMD [${project.startCommand ? project.startCommand.split(' ').map(s => `"${s}"`)
 
         // Bind port randomly in local range or read config
         const hostPort = 8080 + Math.floor(Math.random() * 100);
-        const containerPort = (project.framework === 'React' || project.framework === 'Static') ? 80 : 3000;
+        const containerPort = (project.framework === 'React' || project.framework === 'Vue' || project.framework === 'Svelte' || project.framework === 'Static') ? 80 : 3000;
 
         await appendLogs(`[EXEC] docker run -d --name ${containerName} -p ${hostPort}:${containerPort} ${imageTag}`);
         const runProcess = await execPromise(`docker run -d --name ${containerName} -p ${hostPort}:${containerPort} ${imageTag}`);
