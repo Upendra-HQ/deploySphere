@@ -1,18 +1,42 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'EC2_HOST', defaultValue: '', description: 'REQUIRED: EC2 public IP or domain (no user@ prefix), e.g. 3.10.55.20 or api.example.com')
+        string(name: 'EC2_SSH_USER', defaultValue: 'ubuntu', description: 'SSH user for the EC2 host. Use "ubuntu" for Ubuntu AMIs, "ec2-user" for Amazon Linux/RHEL AMIs. Must match how deploy-ec2.sh provisioned the box.')
+        string(name: 'EC2_APP_DIR', defaultValue: '/home/ubuntu/deploysphere-app', description: 'Absolute path to the app checkout on the EC2 host. Must match TARGET_DIR used by deploy-ec2.sh.')
+        string(name: 'DOCKERHUB_NAMESPACE', defaultValue: 'deploysphere', description: 'Docker Hub namespace/org the images are pushed under, e.g. your Docker Hub username.')
+        string(name: 'VITE_API_BASE_URL', defaultValue: '', description: 'REQUIRED: Public HTTPS URL of the backend API, e.g. https://api.example.com. This is baked into the frontend bundle at build time — without it the deployed frontend silently falls back to http://localhost:5000.')
+        string(name: 'VITE_WS_URL', defaultValue: '', description: 'REQUIRED: Public WSS URL for websocket logs, e.g. wss://api.example.com')
+    }
+
     environment {
         DOCKER_HUB_CREDENTIALS_ID = 'docker-hub-credentials'
-        EC2_SSH_CREDENTIALS_ID   = 'ec2-ssh-key'
-        EC2_HOST                 = 'ec2-user@54.120.45.12' // Production AWS EC2 target
-        IMAGE_NAME_BACKEND       = 'deploysphere/backend:latest'
-        IMAGE_NAME_FRONTEND      = 'deploysphere/frontend:latest'
+        EC2_SSH_CREDENTIALS_ID    = 'ec2-ssh-key'
+        IMAGE_NAME_BACKEND        = "${params.DOCKERHUB_NAMESPACE}/backend:latest"
+        IMAGE_NAME_FRONTEND       = "${params.DOCKERHUB_NAMESPACE}/frontend:latest"
     }
 
     stages {
+        stage('Validate Parameters') {
+            steps {
+                script {
+                    if (!params.EC2_HOST?.trim()) {
+                        error 'EC2_HOST parameter is required (public IP or domain, no user@ prefix).'
+                    }
+                    if (!params.VITE_API_BASE_URL?.trim()) {
+                        error 'VITE_API_BASE_URL parameter is required — without it the frontend build silently falls back to http://localhost:5000.'
+                    }
+                    if (!params.VITE_WS_URL?.trim()) {
+                        error 'VITE_WS_URL parameter is required.'
+                    }
+                }
+            }
+        }
+
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/deploysphere/devops-project.git'
+                git branch: 'main', url: 'https://github.com/Upendra-HQ/deploySphere.git'
             }
         }
 
@@ -46,7 +70,12 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 sh "docker build -t ${IMAGE_NAME_BACKEND} ./backend"
-                sh "docker build -t ${IMAGE_NAME_FRONTEND} ./frontend"
+                sh """
+                    docker build \
+                      --build-arg VITE_API_BASE_URL=${params.VITE_API_BASE_URL} \
+                      --build-arg VITE_WS_URL=${params.VITE_WS_URL} \
+                      -t ${IMAGE_NAME_FRONTEND} ./frontend
+                """
             }
         }
 
@@ -64,11 +93,11 @@ pipeline {
             steps {
                 sshagent([EC2_SSH_CREDENTIALS_ID]) {
                     sh """
-                        ssh -o StrictHostKeyChecking=no ${EC2_HOST} '
-                            cd /home/ec2-user/deploysphere-app &&
+                        ssh -o StrictHostKeyChecking=no ${params.EC2_SSH_USER}@${params.EC2_HOST} '
+                            cd ${params.EC2_APP_DIR} &&
                             git pull origin main &&
-                            docker compose -f docker-compose.prod.yml pull &&
-                            docker compose -f docker-compose.prod.yml up -d --remove-orphans &&
+                            docker compose --env-file .env.production -f docker-compose.prod.yml pull &&
+                            docker compose --env-file .env.production -f docker-compose.prod.yml up -d --remove-orphans &&
                             docker system prune -f
                         '
                     """

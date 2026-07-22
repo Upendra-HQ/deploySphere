@@ -21,3 +21,7 @@ nginx/conf.d/deploysphere-*.conf
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Private keys
+*.pem
+*.key

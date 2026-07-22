@@ -20,6 +20,7 @@ services:
       - deploysphere-prod-network
 
   backend-api:
+    image: ${DOCKERHUB_NAMESPACE:-deploysphere}/backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -58,6 +59,7 @@ services:
       - deploysphere-prod-network
 
   frontend-web:
+    image: ${DOCKERHUB_NAMESPACE:-deploysphere}/frontend:latest
     build:
       context: ./frontend
       dockerfile: Dockerfile
