@@ -111,13 +111,28 @@ const runBuildPipeline = async (deploymentId: string, projectId: string) => {
         } catch (cloneErr: any) {
           await appendLogs(`[WARNING] Failed to clone real repository URL. Error: ${cloneErr.message}`);
           await appendLogs('[INFO] Simulating repository clone: writing configuration boilerplate...');
-          fs.writeFileSync(path.join(tempDir, 'package.json'), JSON.stringify({
-            name: project.name,
-            version: '1.0.0',
-            dependencies: { express: '^4.18.2' },
-            scripts: { start: 'node index.js', build: 'echo "mock build command completed"' },
-          }, null, 2));
-          fs.writeFileSync(path.join(tempDir, 'index.js'), `console.log("Starting ${project.name} running in DeploySphere local container container.");`);
+
+          if (project.framework === 'React' || project.framework === 'Vue' || project.framework === 'Svelte' || project.framework === 'Static') {
+            fs.writeFileSync(path.join(tempDir, 'package.json'), JSON.stringify({
+              name: project.name,
+              version: '1.0.0',
+              scripts: {
+                build: 'mkdir -p dist && printf "<!doctype html><html><head><title>DeploySphere App</title></head><body><h1>DeploySphere deployment is live</h1><p>This fallback build was generated because the configured repository could not be cloned.</p></body></html>" > dist/index.html',
+              },
+            }, null, 2));
+          } else {
+            fs.writeFileSync(path.join(tempDir, 'package.json'), JSON.stringify({
+              name: project.name,
+              version: '1.0.0',
+              dependencies: { express: '^4.18.2' },
+              scripts: { start: 'node index.js', build: 'echo "mock build command completed"' },
+            }, null, 2));
+            fs.writeFileSync(path.join(tempDir, 'index.js'), `const express = require("express");
+const app = express();
+const port = process.env.PORT || 3000;
+app.get("/", (_req, res) => res.send("DeploySphere deployment is live"));
+app.listen(port, () => console.log("Starting ${project.name} on port " + port));`);
+          }
         }
 
         // Step B: Write Dockerfile dynamically
