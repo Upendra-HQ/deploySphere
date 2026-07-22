@@ -281,6 +281,23 @@ const findRunningContainer = async (names: string[]): Promise<string | null> => 
 
 // Check Nginx daemon running state (listening on port 80)
 export const checkNginxStatus = async (): Promise<boolean> => {
+  try {
+    const activeContainer = await findRunningContainer(['deploysphere-nginx-gateway-prod', 'deploysphere-nginx']);
+    if (activeContainer) {
+      return true;
+    }
+  } catch {
+    // Continue with socket checks when Docker is unavailable.
+  }
+
+  if (await checkPort(80, 'nginx-gateway')) {
+    return true;
+  }
+
+  return checkPort(80, 'localhost');
+};
+
+const checkPort = (port: number, host: string): Promise<boolean> => {
   return new Promise((resolve) => {
     const socket = new net.Socket();
     const timer = setTimeout(() => {
@@ -288,8 +305,7 @@ export const checkNginxStatus = async (): Promise<boolean> => {
       resolve(false);
     }, 1000);
 
-    // Standard Nginx listens on port 80
-    socket.connect(80, 'localhost', () => {
+    socket.connect(port, host, () => {
       clearTimeout(timer);
       socket.destroy();
       resolve(true);
